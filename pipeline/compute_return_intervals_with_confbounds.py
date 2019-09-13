@@ -275,7 +275,7 @@ if __name__ == '__main__':
     # parse some args
     parser = argparse.ArgumentParser( description='stack the hourly outputs from raw WRF outputs to NetCDF files of hourlies broken up by year.' )
     parser.add_argument( "-fn", "--fn", action='store', dest='fn', type=str, help="path to the Annual Maximum Series file being run" )
-    parser.add_argument( "-o", "--out_path", action='store', dest='base_dir', type=str, help="output directory to write outputs" )
+    parser.add_argument( "-o", "--out_path", action='store', dest='out_path', type=str, help="output directory to write outputs" )
     parser.add_argument( "-n", "--ncpus", action='store', dest='ncpus', type=int, help="number of cpus to use" )
     
     # parse the args and unpack

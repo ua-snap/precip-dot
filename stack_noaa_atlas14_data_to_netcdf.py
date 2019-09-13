@@ -123,14 +123,14 @@ if __name__ == '__main__':
             # order the files
             ordered_files = [list(filter( lambda x: interval+'yr' in x, cur_files )) for interval in interval_order_ak]
             cur_files = [j for i in ordered_files for j in i ] # unpack
-                
+            
             # stack the current duration and store in a list
             arr = np.array([ open_raster(fn) for fn in cur_files ])
             out = out + [arr.copy()]
             del arr
 
         # stack these new 3d arrays to 4d
-        arr = np.array(out).astype(np.int32)
+        arr = np.array(out)#.astype(np.int32)
 
         # get coordinates:
         with rasterio.open(cur_files[0]) as tmp:
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
         # write it out to disk
         out_fn = '/workspace/Shared/Tech_Projects/DOT/project_data/NOAA_Atlas14/netcdf/pr_freq_noaa-atlas14_ak_{}.nc'.format(group_name)
-        new_ds.to_netcdf( out_fn, engine='scipy' )
+        new_ds.to_netcdf( out_fn ) #, engine='scipy' )
 
         # cleanup
         new_ds.close()

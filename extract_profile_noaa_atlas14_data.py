@@ -26,7 +26,7 @@ if __name__ == '__main__':
     x1,y1 = p2(lon, lat)
 
     a = meta['transform']
-    col,row = [int(i) for i in ~a*(x1,y1)]
+    colrows = [ np.array(~a*(x,y)).astype(np.int).tolist() for x,y in shp_polar.geometry.apply(lambda x: (x.x, x.y))]
 
     # slicing and showing the table we want to see for a single variable.
     table = new_ds.pr_freq[...,row,col].to_pandas() / 1000 # rescale data too...

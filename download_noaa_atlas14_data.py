@@ -36,3 +36,11 @@ print('All files downloaded for ' + str(diff.seconds) + 's')
 # 	- MORE INFORMATION ON THE GRIDS:
 # 		- 1000ths of inches; -9 is missing
 # 		- akXyrYY (X = return period, YY = duration; u = upper limit, l= lower limit) for partial duration series, _ams for annual maximum series
+
+# # # # 
+# This GIS grid atlas contains precipitation frequency estimates for Alaska based on precipitation data collected between 1886-2011.
+# This atlas is an updated version of Technical Paper 47, published in 1963, and Technical Paper 52, published in 1965. 
+# The grids provide information for durations from 5 minutes through 60 days, and for return periods of 1 year through 1000 years. 
+# All grids are in geographic coordinate system (NAD83 horizontal datum) and units are in 1000th of inches.
+
+

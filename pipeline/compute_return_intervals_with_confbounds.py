@@ -7,7 +7,7 @@
 # # https://www.linkedin.com/pulse/beginners-guide-carry-out-extreme-value-analysis-2-chonghua-yin/
 # # https://github.com/royalosyin/A-Beginner-Guide-to-Carry-out-Extreme-Value-Analysis-with-Codes-in-Python
 
-NSAMPLES=500
+NSAMPLES=5000
 def run_bootstrap(dat, lmom_fitted, intervals, method='pi'):
     ''' 
     Calculate confidence intervals using parametric bootstrap and the

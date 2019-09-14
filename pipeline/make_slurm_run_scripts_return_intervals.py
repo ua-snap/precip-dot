@@ -38,7 +38,7 @@ if __name__ == '__main__':
     files=sorted(glob.glob(os.path.join(ams_path,'pcpt_*_ams.nc')))
 
     for fn in files:
-        slurm_basename = 'run_'+os.path.basename(fn).replace('pcpt','run').replace('.nc','.slurm')
+        slurm_basename = os.path.basename(fn).replace('pcpt','run').replace('.nc','.slurm')
         slurm_fn = os.path.join(slurm_path, slurm_basename)
 
         # make sure the slurm dir exists and create it if not.

@@ -1,3 +1,3 @@
-# more doc to follow
+# Precip-DOT
 
-![Image of Yaktocat](https://octodex.github.com/images/yaktocat.png)
+![processflow](https://github.com/ua-snap/precip-dot/blob/master/documents/DOT_Project_ProcessFlow.png)

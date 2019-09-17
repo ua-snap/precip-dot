@@ -88,39 +88,16 @@ if __name__ == '__main__':
     # data_group = 'NCAR-CCSM4_rcp85'
     # # # # # END TESTING
 
-    # # set up some pathing
-    # path = '/rcs/project_data/wrf_data/hourly_fix/pcpt'
-    # # path = '/workspace/Shared/Tech_Projects/DOT/project_data/data_s3'
-    # # path = '/workspace/Shared/Tech_Projects/wrf_data/project_data/wrf_data/hourly_fix/pcpt'
-    # # path = '/storage01/malindgren/wrf_ccsm4/hourly_fix/pcpt'
-    # # path = '/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/pcpt'
-    # out_path = '/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/durations'
-    
-
-    # set up the durations
-    # data_groups = ['ERA-Interim_historical']
-    # data_groups = ['GFDL-CM3_historical']
-    # data_groups = ['NCAR-CCSM4_historical']
-    # data_groups = ['GFDL-CM3_rcp85']
-    # data_groups = ['NCAR-CCSM4_rcp85']
-
     # sort/group the filenames, toss in a dict
-    # file_groups = {}
-    # for data_group in data_groups:
     files = sorted(glob.glob(os.path.join(path, '*{}*.nc'.format(data_group) )))
     if 'rcp85' in data_group:
         # filter to the rcp85 < 2060...
         years = [ int(os.path.basename(fn).split('.')[0].split('_')[-1]) for fn in files ]
         files = pd.Series(files, index=years).loc[:2059].tolist()
-    # file_groups[data_group] = files
-
-    # for group in file_groups:
-    print( 'runnning: {}'.format(data_group))
-    # files = file_groups[data_group]
 
     # run the durations in a cascading fashion
     for duration in DURATIONS_PANDAS:
-        print('running:{}'.format(duration))
+        print(' duration:{}'.format(duration))
         out_names = []
         if (duration in ['2H','3H','6H']):
             for fn in files:            
@@ -137,7 +114,7 @@ if __name__ == '__main__':
         files = out_names
 
         # move hourly data to the output location -- it is the starting 'duration'
-        print('moving the base hourlies, renamed to final naming convention, to the output_path')
+        print(' moving the base hourlies, renamed to final naming convention, to the output_path')
         files = file_groups[data_group]
         years = [ os.path.basename(fn).split('.')[0].split('_')[-1] for fn in files ]
         out_filenames = [os.path.join(out_path, 'pcpt_{0}_sum_wrf_{1}_{2}.nc'.format('60m', data_group, year)) for year in years]

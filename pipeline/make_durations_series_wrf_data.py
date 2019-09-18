@@ -94,6 +94,7 @@ if __name__ == '__main__':
         # filter to the rcp85 < 2060...
         years = [ int(os.path.basename(fn).split('.')[0].split('_')[-1]) for fn in files ]
         files = pd.Series(files, index=years).loc[:2059].tolist()
+        wrf_files = files.copy() # keep a copy for moving 1 hourly at the end.
 
     # run the durations in a cascading fashion
     for duration in DURATIONS_PANDAS:
@@ -115,7 +116,6 @@ if __name__ == '__main__':
 
         # move hourly data to the output location -- it is the starting 'duration'
         print(' moving the base hourlies, renamed to final naming convention, to the output_path')
-        files = file_groups[data_group]
-        years = [ os.path.basename(fn).split('.')[0].split('_')[-1] for fn in files ]
+        years = [ os.path.basename(fn).split('.')[0].split('_')[-1] for fn in wrf_files ]
         out_filenames = [os.path.join(out_path, 'pcpt_{0}_sum_wrf_{1}_{2}.nc'.format('60m', data_group, year)) for year in years]
         _ = [ shutil.copy( fn, out_fn ) for fn,out_fn in zip(files, out_filenames) if not os.path.exists(out_fn) ]

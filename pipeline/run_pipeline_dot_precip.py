@@ -16,7 +16,7 @@ if __name__ == '__main__':
     ncpus = 63
     for data_group in data_groups:
         print('running: {}'.format(data_group))
-        
+
         # generate duration series
         print('computing duration series')
         path = '/rcs/project_data/wrf_data/hourly_fix/pcpt'
@@ -29,13 +29,12 @@ if __name__ == '__main__':
         _ = subprocess.call(['ipython','make_annual_maximum_series_wrf_data.py','--',\
                                 '-p', durations_path, '-o', ams_path, '-d', data_group])
 
-        break
-        # compute lmoment-based return interval predictions (with confidence bounds)
+        # compute lmoment-based return interval predictions (with confidence bounds) -- launch with slurm
         print('computing return intervals and confidence bounds')
         output_path = '/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/output_interval_durations'
         files = glob.glob(os.path.join(ams_path , '*{}*.nc'.format(data_group)))
         for fn in files:
-            _ = subprocess.call(['sbatch','ipython','compute_return_intervals_with_confbounds.py', '--', \
+            # launch using SLURM's sbatch command (will queue jobs on the 'main' partition using one node (-N 1))
+            _ = subprocess.call(['sbatch','-p','main,viz','-N','1','ipython','compute_return_intervals_with_confbounds.py', '--', \
                                 '-fn', fn, '-o', output_path])
-
         

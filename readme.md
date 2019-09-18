@@ -50,6 +50,6 @@ ipython run_pipeline_dot_precip.py
 
 ``` 
 
-# Diagram of Processing Workflow As It Currently Stands:
+# Diagram of Processing Workflow
 
 ![processflow](https://github.com/ua-snap/precip-dot/blob/master/documents/DOT_Project_ProcessFlow.png)

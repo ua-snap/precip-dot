@@ -10,7 +10,7 @@ numpy==1.16.4
 pandas==0.24.2
 pyproj==1.9.5.1
 rasterio==1.0.21
-requests==2.18.4
+requests==2.22.0
 scikits.bootstrap==0.3.3
 scipy==0.19.1
 Shapely==1.6.1

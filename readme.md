@@ -1,6 +1,9 @@
 # Precip-DOT
 
-## To Use This Package:
+These data constitute an effort to update the NOAA Atlas 14 for Alaska using more recent historical observed climate information and adding in the effects of a changing climate. The goal is to produce a similar set of data as is displayed and served currently through the [NOAA Atlas 14 Precipitation Frequency Web Interface](https://hdsc.nws.noaa.gov/hdsc/pfds/pfds_map_ak.html), using the WRF Dynamically Downscaled Data for Alaska produced by researchers affiliated with the Alaska Climate Adaptation Science Center (AK-CASC). This work is funded by the Alaska Department of Transportation (AKDOT) to add climate futures data to existing workflows designing culverts and other engineering features of road construction.
+
+
+## How To Use This Package
 
 ### Install Python (if you dont have it already)
 For installation procedures on the SNAP Atlas Cluster see [here](https://github.com/ua-snap/precip-dot/blob/master/other_scripts/How_To_Install_and_Use_Python_on_Atlas.md)
@@ -26,7 +29,7 @@ pip install -r requirements.txt
 ### Run the Pipeline
 There is a launcher script that will run all of the processing for this project.  It is located [here](https://github.com/ua-snap/precip-dot/blob/master/pipeline/run_pipeline_dot_precip.py) or in the `pipeline` sub-folder in the `precip-dot` repository you cloned above. You might have to fiddle around with the pathing therein as it is setup to work on a specific system with specific named servers and folder paths.
 
-I would instantiate the processing using the following:
+The way to run the processing pipeline is using the following method:
 
 ```sh
 # login to atlas

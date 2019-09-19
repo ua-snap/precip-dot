@@ -8,7 +8,7 @@ These data constitute an effort to update the NOAA Atlas 14 for Alaska using mor
 ### Install Python (if you dont have it already)
 For installation procedures on the SNAP Atlas Cluster see [here](https://github.com/ua-snap/precip-dot/blob/master/other_scripts/How_To_Install_and_Use_Python_on_Atlas.md)
 
-### Clone the Repository from github (this assumes you have a GitHub account and Git CLI installed)
+### Clone the Repository from github (this assumes you have a GitHub account and `git` CLI installed)
 ```sh
 git clone git@github.com:ua-snap/precip-dot.git
 cd precip-dot

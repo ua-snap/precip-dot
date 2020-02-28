@@ -6,6 +6,10 @@
 	"workspaceFolder": "/workspace",
 	"workspaceMount": "source=precip-dot-workspace,target=/workspace,type=volume",
 
+	"runArgs": [
+		"-v", "gpgdir:/root/.gnupg"
+	],
+
 	// Set *default* container specific settings.json values on container create.
 	"settings": { 
 		"terminal.integrated.shell.linux": "/bin/bash"

@@ -1,0 +1,290 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+=head1 NAME
+
+run-pipeline - Execute all or part of the data-processing pipeline
+
+=head1 SYNOPSIS
+
+run-pipeline [-h|--help] [-n|--dry-run] DATA_DIR DATA_SETS STEPS
+run-pipeline ls
+
+Options:
+    -h|--help:      Print this help and exit
+    -n|--dry-run:   Show which steps of the pipeline will get run
+                    but don't actually run them.
+
+DATA_DIR is the path to the directory where the data for the pipeline lies.
+
+DATA_SETS is a comma-separated list of the data sets/models to execute
+the pipeline for. The elements of the list can be any of the following values:
+    NCAR-CCSM4_historical
+    NCAR-CCSM4_rcp85
+    ERA-Interim_historical
+    GFDL-CM3_historical
+    GFDL-CM3_rcp85
+Alternatively, this argument can simply be the string "all" to execute 
+for all data sets.
+
+STEPS is a comma-separated list of steps to run in the pipeline. The format
+is analgous to the field selection of the cut(1) command. Each element of the
+list can be either the name of a step, or a range in one of the formats
+below:
+    NAME        The single step with NAME
+    NAME-       The step with NAME and every step after it
+    NAME-NAME2  All the steps from NAME to NAME2 (inclusive)
+    -NAME       The steps from the first one up through NAME
+Every step will only be run once and always in the order that the script
+defines for the pipeline, REGARDLESS of how you specify them in the list.
+Like with DATA_SETS, this can also be the string "all" to execute all steps.
+
+Execute `run-pipeline ls` to see a list of the names for all the steps in
+the pipeline and a description of each step, as well as a list of all 
+possible data set names.
+
+=cut
+
+# Mapping of steps to descriptions
+my %descriptions = (
+    'durations' => "Compute durations series from raw hourly data",
+    'ams'       => "Compute annual maximum series form durations series",
+    'intervals' => "Compute return intervals (with confidence bounds) from annual maximum series"
+);
+
+# Ordering of steps
+my @order = qw(durations ams intervals);
+
+# List of possible data set names
+my @allowed_data_sets = qw(
+    NCAR-CCSM4_historical
+    NCAR-CCSM4_rcp85
+    ERA-Interim_historical
+    GFDL-CM3_historical
+    GFDL-CM3_rcp85
+);
+
+#######################
+# Subroutines for each step
+#######################
+
+use File::Path qw(make_path);
+
+# NOTE: By the time these steps are executed, the script will have changed
+# directories to the 'pipeline' directory.
+# Each of these subroutines also takes as arguments, the data directory
+# and then the current data set name.
+
+sub do_durations {
+    (my $data_dir, my $data_set) = @_;
+    my $input_data = "$data_dir/pcpt";
+    unless (-d $input_data) {
+        print STDERR "Data directory $input_data does not exist!\n";
+        return 1;
+    }
+
+    my $output_data = "$data_dir/durations";
+    unless (make_path($output_data)) {
+        print STDERR "Unable to create directory $output_data!";
+        return 1;
+    }
+
+    system (
+        qw'python3 make_durations_series_wrf_data.py -p', 
+        $input_data, '-o', $output_data, '-d', $data_set
+    );
+
+    return $? >> 8;
+}
+
+sub do_ams {
+    (my $data_dir, my $data_set) = @_;
+    my $input_data = "$data_dir/durations";
+    unless (-d $input_data) {
+        print STDERR "Data directory $input_data does not exist!\n";
+        return 1;
+    }
+
+    my $output_data = "$data_dir/annual_maximum_series";
+    unless (make_path($output_data)) {
+        print STDERR "Unable to create directory $output_data!";
+        return 1;
+    }
+
+    system (
+        qw'python3 make_annual_maximum_series_wrf_data.py -p', 
+        $input_data, '-o', $output_data, '-d', $data_set
+    );
+
+    return $? >> 8;
+}
+
+sub do_intervals {
+    (my $data_dir, my $data_set) = @_;
+    my $input_data = "$data_dir/annual_maximum_series";
+    unless (-d $input_data) {
+        print STDERR "Data directory $input_data does not exist!\n";
+        return 1;
+    }
+    opendir(my $dh, $input_data) || die "Can't open directory: $input_data: $!";
+
+    my @input_files = grep {-f "$input_data/$_" && /.*\Q$data_set\E.*\.nc/} readdir($dh);
+
+    my $output_data = "$data_dir/output_interval_durations";
+    unless (make_path($output_data)) {
+        print STDERR "Unable to create directory $output_data!";
+        return 1;
+    }
+
+    foreach (@input_files) {
+        print "$_\n";
+        system(
+            qw'python3 compute_return_intervals_with_confbounds.py -fn',
+            "$input_data/$_", '-o', $output_data
+        );
+        if (($? >> 8) != 0) {
+            print STDERR "Error processing file: $_\n";
+            return 1;
+        }
+    }
+
+    return $? >> 8;
+}
+
+# Mapping of steps to subroutines
+my %subs = (
+    'durations' => \&do_durations,
+    'ams'       => \&do_ams,
+    'intervals' => \&do_intervals
+);
+
+#######################
+# MAIN
+#######################
+
+use Getopt::Long qw(GetOptions Configure);
+use Pod::Usage qw(pod2usage);
+
+# Parse Options
+my $dry_run = 0;
+Configure qw'auto_help pass_through';
+GetOptions(
+    'dry-run|n' => \$dry_run
+);
+
+# Print list of steps and data sets if 'ls' is the
+# first (and only) argument
+if (@ARGV == 1 && $ARGV[0] eq 'ls') {
+    print "The steps of the pipeline are (in order):\n";
+    foreach (0..$#order) {
+        printf "\t\033[1m%d: %-10s\033[0m\t%s\n", $_+1, $order[$_], $descriptions{$order[$_]};
+    }
+    print "The allowed data sets are:\n";
+    foreach (@allowed_data_sets) {
+        print "\033[1m\t$_\033[0m\n";
+    }
+    exit 0;
+}
+
+pod2usage("Invalid arguments.") if (@ARGV != 3);
+
+(my $data_dir, my $set_list, my $step_list) = @ARGV;
+
+die "Data directory, $data_dir, is not a directory." unless (-d $data_dir);
+
+#######################
+# Parse Arguments
+#######################
+
+# Parse data sets
+my @data_sets;
+if ($set_list eq 'all') {
+    @data_sets = @allowed_data_sets;
+} else {
+    foreach my $set_name (split /,/, $set_list) {
+        if (grep {$_ eq $set_name} @allowed_data_sets) {
+            push @data_sets, $set_name;
+        } else {
+            print STDERR "Invalid data set name! '$set_name'\n";
+            print STDERR "The allowed data sets are:\n";
+            foreach (@allowed_data_sets) {
+                print STDERR "\t$_\n";
+            }
+            exit 2;
+        }
+    }
+}
+
+# Parse Steps
+use List::Util qw(first);
+
+# Get the order index of the specified step
+# (or die if the name doesn't match anything)
+sub get_step {
+    my $step = shift @_;
+    my $idx = first { $order[$_] eq $step } 0..$#order;
+
+    unless (defined($idx)) {
+        print STDERR "Invalid step name! '$step'\n";
+        print STDERR "The allowed steps are:\n";
+        foreach(@order) {
+            print "\t$_\n";
+        }
+        exit 2;
+    }
+
+    return $idx;
+}
+
+my @do_step = (0)x@order; # Flags indicating whether each step should be performed
+if ($step_list eq 'all') {
+    @do_step = (1)x@do_step;
+} else {
+    foreach (split /,/, $step_list) {
+        my @slice;
+        if (/^\w+$/) {
+            @slice = get_step($_);
+        }
+        elsif (/^-(\w+)$/) {
+            @slice = 0..get_step($1);
+        }
+        elsif (/^(\w+)-$/) {
+            @slice = get_step($1)..$#do_step;
+        }
+        elsif (/^(\w+)-(\w+)$/) {
+            @slice = get_step($1)..get_step($2);
+        }
+        else {
+            pod2usage("Invalid LIST element!");
+        }
+        @do_step[@slice] = (1)x@slice;
+    }
+}
+
+#######################
+# Execute Steps
+#######################
+
+use File::Basename;
+
+# chdir to pipeline directory (which contains all the python scripts)
+my $pipeline_dir = dirname($0) . "/pipeline";
+chdir($pipeline_dir);
+
+
+foreach my $data_set (@data_sets) {
+    print "\033[1m>>> $data_set <<<\033[0m\n";
+    foreach (0..$#do_step) {
+        if ($dry_run) {
+            print "${order[$_]}\n" if $do_step[$_];
+            next;
+        }
+        print "Performing step: \033[1m{$order[$_]}\033[0m...\n";
+        my $exitcode = $subs{$order[$_]}->($data_dir, $data_set) if $do_step[$_];
+        if ($exitcode != 0) {
+            print "\033[31;1mERROR:\033[0m Error occured executing step! Aborting...\n";
+            exit 2;
+        }
+    }
+}

@@ -8,23 +8,25 @@ run-pipeline - Execute all or part of the data-processing pipeline
 
 =head1 SYNOPSIS
 
-run-pipeline [-h|--help] [-n|--dry-run] DATA_DIR DATA_SETS STEPS
-run-pipeline ls
+    run-pipeline [-h|--help] [-n|--dry-run] DATA_DIR DATA_SETS STEPS
+    run-pipeline ls
 
-Options:
-    -h|--help:      Print this help and exit
-    -n|--dry-run:   Show which steps of the pipeline will get run
-                    but don't actually run them.
+    Options:
+        -h|--help:      Print help information and exit
+        -n|--dry-run:   Show which steps of the pipeline will get run
+                        but don't actually run them.
 
 DATA_DIR is the path to the directory where the data for the pipeline lies.
 
 DATA_SETS is a comma-separated list of the data sets/models to execute
 the pipeline for. The elements of the list can be any of the following values:
+
     NCAR-CCSM4_historical
     NCAR-CCSM4_rcp85
     ERA-Interim_historical
     GFDL-CM3_historical
     GFDL-CM3_rcp85
+
 Alternatively, this argument can simply be the string "all" to execute 
 for all data sets.
 
@@ -32,10 +34,12 @@ STEPS is a comma-separated list of steps to run in the pipeline. The format
 is analgous to the field selection of the cut(1) command. Each element of the
 list can be either the name of a step, or a range in one of the formats
 below:
+
     NAME        The single step with NAME
     NAME-       The step with NAME and every step after it
     NAME-NAME2  All the steps from NAME to NAME2 (inclusive)
     -NAME       The steps from the first one up through NAME
+
 Every step will only be run once and always in the order that the script
 defines for the pipeline, REGARDLESS of how you specify them in the list.
 Like with DATA_SETS, this can also be the string "all" to execute all steps.
@@ -274,7 +278,6 @@ use File::Basename;
 # chdir to pipeline directory (which contains all the python scripts)
 my $pipeline_dir = dirname($0) . "/pipeline";
 chdir($pipeline_dir);
-
 
 foreach my $data_set (@data_sets) {
     print "\033[1m>>> $data_set <<<\033[0m\n";

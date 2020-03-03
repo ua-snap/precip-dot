@@ -85,8 +85,9 @@ sub do_durations {
     }
 
     my $output_data = "$data_dir/durations";
-    unless (make_path($output_data)) {
-        print STDERR "Unable to create directory $output_data!";
+    make_path($output_data, {error => \my $err});
+    if ($err && @$err) {
+        print STDERR "Unable to create directory $output_data!\n";
         return 1;
     }
 
@@ -107,8 +108,9 @@ sub do_ams {
     }
 
     my $output_data = "$data_dir/annual_maximum_series";
-    unless (make_path($output_data)) {
-        print STDERR "Unable to create directory $output_data!";
+    make_path($output_data, {error => \my $err});
+    if ($err && @$err) {
+        print STDERR "Unable to create directory $output_data!\n";
         return 1;
     }
 
@@ -132,8 +134,9 @@ sub do_intervals {
     my @input_files = grep {-f "$input_data/$_" && /.*\Q$data_set\E.*\.nc/} readdir($dh);
 
     my $output_data = "$data_dir/output_interval_durations";
-    unless (make_path($output_data)) {
-        print STDERR "Unable to create directory $output_data!";
+    make_path($output_data, {error => \my $err});
+    if ($err && @$err) {
+        print STDERR "Unable to create directory $output_data!\n";
         return 1;
     }
 
@@ -280,7 +283,7 @@ foreach my $data_set (@data_sets) {
             print "${order[$_]}\n" if $do_step[$_];
             next;
         }
-        print "Performing step: \033[1m{$order[$_]}\033[0m...\n";
+        print "Performing step: \033[1m${order[$_]}\033[0m...\n";
         my $exitcode = $subs{$order[$_]}->($data_dir, $data_set) if $do_step[$_];
         if ($exitcode != 0) {
             print "\033[31;1mERROR:\033[0m Error occured executing step! Aborting...\n";

@@ -32,7 +32,7 @@ def run_bootstrap(dat, lmom_fitted, intervals, method='pi'):
         
         samplefit = [ paras[i] for i in ['loc', 'scale', 'c']]
         # sample_fitted = dist_types[distribution](**paras)
-        sample_fitted = distr.gev(*samplefit)
+        sample_fitted = distr.gev(**paras)
 
         # set up the return intervals to pull from fitted distribution
         # intervals = np.arange(0.1, 1000.0, 0.1) + 1 
@@ -132,129 +132,19 @@ def run_ci( dat, intervals ):
         return {'lower_ci':nan_arr, 'upper_ci':nan_arr, 
                 'params_ci':None}
 
-def plot_it(fitted_gev, dat_intervals):
-    # sT = dat_ret_intervals
-    N    = np.r_[1:len(dat)+1]*1.0 #must *1.0 to convert int to float
-    Nmax = max(N)
-
-    # plot it out:
-    fig, ax = plt.subplots()
-
-    plt.setp(ax.lines, linewidth = 2, color = 'magenta')
-
-    ax.set_title("GEV Distribution")
-    ax.set_xlabel("Return Period (Year)")
-    ax.set_ylabel("Precipitation")
-    ax.semilogx(avi, dat_intervals)
-    ax.scatter(Nmax/N, sorted(dat)[::-1], color = 'orangered')
-
-    ax.semilogx(avi, ci_Td, '--')
-    ax.semilogx(avi, ci_Tu, '--')
-    ax.fill_between(avi, ci_Td, ci_Tu, color = '0.75', alpha = 0.5)
-
-    plt.savefig('/workspace/Shared/Tech_Projects/DOT/project_data/testing_eva/test_confInterval.png')
-    plt.close()
-    plt.cla()
-    return 1
-
 def run_par_update_arr( idx ):
     tmp_out = np.ctypeslib.as_array(out_shared)
     tmp_out_ci_upper = np.ctypeslib.as_array(out_ci_upper_shared)
     tmp_out_ci_lower =np.ctypeslib.as_array(out_ci_lower_shared)
 
     i,j = idx
-    tmp_out[:,i,j] = run( arr[:,i,j], avi )#.astype(np.float32)
-    tmp = run_ci( arr[:,i,j], avi ) # clunky, but will have to do...
-    tmp_out_ci_upper[:,i,j] = tmp['upper_ci']#.astype(np.float32) 
-    tmp_out_ci_lower[:,i,j] = tmp['lower_ci']#.astype(np.float32)
-
-def coordinates( fn=None, meta=None, numpy_array=None, input_crs=None, to_latlong=False ):
-    '''
-    take a raster file as input and return the centroid coords for each 
-    of the grid cells as a pair of numpy 2d arrays (longitude, latitude)
-
-    User must give either:
-        fn = path to the rasterio readable raster
-    OR
-        meta & numpy ndarray (usually obtained by rasterio.open(fn).read( 1 )) 
-        where:
-        meta = a rasterio style metadata dictionary ( rasterio.open(fn).meta )
-        numpy_array = 2d numpy array representing a raster described by the meta
-
-    input_crs = rasterio style proj4 dict, example: { 'init':'epsg:3338' }
-    to_latlong = boolean.  If True all coordinates will be returned as EPSG:4326
-                         If False all coordinates will be returned in input_crs
-    returns:
-        meshgrid of longitudes and latitudes
-
-    borrowed from here: https://gis.stackexchange.com/a/129857
-    ''' 
-    
-    import rasterio
-    import numpy as np
-    from affine import Affine
-    from pyproj import Proj, transform
-
-    if fn:
-        # Read raster
-        with rasterio.open( fn ) as r:
-            T0 = r.transform  # upper-left pixel corner affine transform
-            p1 = Proj( r.crs )
-            A = r.read( 1 )  # pixel values
-
-    elif (metadata is not None) & (numpy_array is not None):
-        A = numpy_array
-        if input_crs != None:
-            p1 = Proj( input_crs )
-            T0 = meta[ 'transform' ]
-        else:
-            p1 = None
-            T0 = meta[ 'transform' ]
-    else:
-        BaseException( 'check inputs' )
-
-    # All rows and columns
-    cols, rows = np.meshgrid(np.arange(A.shape[1]), np.arange(A.shape[0]))
-    # Get affine transform for pixel centres
-    T1 = T0 * Affine.translation( 0.5, 0.5 )
-    # Function to convert pixel row/column index (from 0) to easting/northing at centre
-    rc2en = lambda r, c: ( c, r ) * T1
-    # All eastings and northings -- this is much faster than np.apply_along_axis
-    eastings, northings = np.vectorize(rc2en, otypes=[np.float, np.float])(rows, cols)
-
-    if to_latlong == False:
-        return eastings, northings
-    elif (to_latlong == True) & (input_crs != None):
-        # Project all longitudes, latitudes
-        longs, lats = transform(p1, p1.to_latlong(), eastings, northings)
-        return longs, lats
-    else:
-        BaseException( 'cant reproject to latlong without an input_crs' )
-
-
-def to_nc( arr, xc, yc, intervals, durations ):
-    # build dataset with levels at each timestep
-    new_ds = xr.Dataset({'pr_freq': (['durations','intervals','yc', 'xc'], arr.copy())},
-                        coords={'xc': ('xc', xc[0,]),
-                                'yc': ('yc', yc[:,0]),
-                                'intervals':intervals,
-                                'durations':durations })
-
-    # # this encoding stuff is still non-working, but would be great to finally figure out.
-    # encoding = {'pr_freq':{'dtype': 'int16', 'zlib': True,'complevel': 9, 'scale_factor':.001,}} 
-
-    # write it out to disk
-    out_fn = '/workspace/Shared/Tech_Projects/DOT/project_data/NOAA_Atlas14/netcdf/pr_freq_noaa-atlas14_ak_{}.nc'.format(group_name)
-    new_ds.to_netcdf( out_fn, engine='scipy' )
-
-    # cleanup
-    new_ds.close()
-
+    if (i,j) not in bad_idx:
+        tmp_out[:,i,j] = run( arr[:,i,j], avi )#.astype(np.float32)
+        tmp = run_ci( arr[:,i,j], avi ) # clunky, but will have to do...
+        tmp_out_ci_upper[:,i,j] = tmp['upper_ci']#.astype(np.float32)
+        tmp_out_ci_lower[:,i,j] = tmp['lower_ci']#.astype(np.float32)
 
 if __name__ == '__main__':
-    import matplotlib
-    matplotlib.use('agg')
-    from matplotlib import pyplot as plt
 
     import rasterio, itertools, glob, os
     import xarray as xr
@@ -294,7 +184,7 @@ if __name__ == '__main__':
 
 
     # read in precalculated annual maximum series
-    ds = xr.open_mfdataset( fn ).load()
+    ds = xr.open_mfdataset( fn, combine='by_coords' ).load()
     ds_ann_max = ds['pcpt']*0.0393701 # make inches...
     # ds_ann_max = ds['pcpt'] / 25.4 # make inches too...
             
@@ -309,10 +199,15 @@ if __name__ == '__main__':
     # avi = np.array([1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2,5,10,25,50,100,200,500,1000]).astype(np.float64)
     avi = np.array([2,5,10,25,50,100,200,500,1000]).astype(np.float)
 
+    # Filter out the coordinates on the grid where the values are all zeroes.
+    # (The return interval calculation chokes on a distribution of all 
+    # zeroes).
+    # These tend to just be the coordinates along the edges of the grid,
+    # so it's a normal part of the data.
     arr = ds_ann_max.values.copy() 
     good_index = np.apply_along_axis(lambda x: (x == 0).all(),arr=arr, axis=0)
     idx = np.where(good_index == True)
-    bad_idx = list(zip(*idx))
+    bad_idx = set(zip(*idx))
 
     # # SERIAL APPROACH -- ~14h per file run time.:
     # # loop through a 3D array and make a new 3D array with the returns
@@ -341,7 +236,7 @@ if __name__ == '__main__':
     out_shared = sharedctypes.RawArray(out._type_, out)
     out_ci_upper_shared = sharedctypes.RawArray(out_ci_upper._type_, out_ci_upper)
     out_ci_lower_shared = sharedctypes.RawArray(out_ci_lower._type_, out_ci_lower)
-    
+
     p = mp.Pool(ncpus)
     p.map( run_par_update_arr, indexes )
     p.close()
@@ -369,10 +264,6 @@ if __name__ == '__main__':
             'nodata':-9999
             }
 
-    # # make NetCDF files from the outputs
-    # xc,yc = coordinates(meta=meta, numpy_array=out[0,0,...])
-
-    # to_nc( arr, xc, yc, avi, durations )
     mb_dirname = os.path.join(out_path,'multiband')
     if not os.path.exists(mb_dirname):
         _ = os.makedirs(mb_dirname)

@@ -145,9 +145,9 @@ sub do_intervals {
     }
 
     foreach (@input_files) {
-        print "$_\n";
+        print " $_\n";
         system(
-            qw'python3 compute_return_intervals_with_confbounds.py -fn',
+            qw'python3 compute_return_intervals_with_confbounds.py -n 32 -fn',
             "$input_data/$_", '-o', $output_data
         );
         if (($? >> 8) != 0) {
@@ -172,6 +172,7 @@ my %subs = (
 
 use Getopt::Long qw(GetOptions Configure);
 use Pod::Usage qw(pod2usage);
+use Cwd qw(abs_path);
 
 # Parse Options
 my $dry_run = 0;
@@ -197,6 +198,7 @@ if (@ARGV == 1 && $ARGV[0] eq 'ls') {
 pod2usage("Invalid arguments.") if (@ARGV != 3);
 
 (my $data_dir, my $set_list, my $step_list) = @ARGV;
+$data_dir = abs_path($data_dir);
 
 die "Data directory, $data_dir, is not a directory." unless (-d $data_dir);
 
@@ -282,15 +284,18 @@ chdir($pipeline_dir);
 foreach my $data_set (@data_sets) {
     print "\033[1m>>> $data_set <<<\033[0m\n";
     foreach (0..$#do_step) {
-        if ($dry_run) {
-            print "${order[$_]}\n" if $do_step[$_];
-            next;
-        }
-        print "Performing step: \033[1m${order[$_]}\033[0m...\n";
-        my $exitcode = $subs{$order[$_]}->($data_dir, $data_set) if $do_step[$_];
-        if ($exitcode != 0) {
-            print "\033[31;1mERROR:\033[0m Error occured executing step! Aborting...\n";
-            exit 2;
+        if ($do_step[$_]) {
+            if ($dry_run) {
+                print "${order[$_]}\n";
+                next;
+            }
+            print "Performing step: \033[1m${order[$_]}\033[0m...\n";
+            my $exitcode = $subs{$order[$_]}->($data_dir, $data_set);
+            if ($exitcode != 0) {
+                print "\033[31;1mERROR:\033[0m Error occured executing step! Aborting...\n";
+                exit 2;
+            }
         }
     }
+
 }

@@ -7,7 +7,7 @@ def make_ams( ds ):
 
 def run( x ):
     fn, out_fn = x
-    ds = xr.open_mfdataset( fn )
+    ds = xr.open_mfdataset( fn, combine='by_coords' )
     ds_ams = make_ams( ds )
     
     # write it back out to disk with compression encoding
@@ -21,7 +21,7 @@ def run( x ):
     return out_fn
 
 if __name__ == '__main__':
-    import os, glob, itertools, dask
+    import os, glob, itertools
     import xarray as xr
     # import multiprocessing as mp
     import argparse

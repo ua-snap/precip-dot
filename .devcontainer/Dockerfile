@@ -47,6 +47,6 @@ RUN test "$(sha256sum /root/miniconda_install.sh | awk '{print $1}')" = \
 RUN yes yes | bash /root/miniconda_install.sh
 
 # Install libraries
-RUN yum -y install freetype-devel libpng-devel hdf5-devel
+RUN yum -y install freetype-devel libpng-devel hdf5-devel hdf5 openblas-devel lapack-devel
 
 RUN echo 'export GPG_TTY=$(tty)' >> /root/.bashrc

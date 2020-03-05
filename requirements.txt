@@ -5,7 +5,6 @@ geopandas
 ipython
 matplotlib
 netCDF4
-numba
 numpy
 pandas
 pyproj
@@ -16,4 +15,4 @@ scipy
 Shapely
 toolz
 xarray
-lmoments3
+git+https://github.com/OpenHydrology/lmoments3.git@d2f30733275b4f4d7b4e86c13fd193733820c724

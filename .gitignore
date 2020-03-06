@@ -122,3 +122,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# macOS files
+.DS_Store
+*._
+
+# test webapp data files
+generate_test_data/test_data/*
+pcpt_hourly_wrf_ERA-Interim_historical_1992.nc

@@ -34,3 +34,10 @@ If you're running on SNAP's ATLAS server, then some of this has probably already
 
 Simply calling `./run-pipeline` will execute the entire pipeline for all data sets with default options configured for running on SNAP's ATLAS server (such as using the SLURM cluster and using `/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/` as the data directory). However, the [run-pipeline](run-pipeline) script is very powerful and through various command-line options, it can be customized to run just subsets of the pipeline, in different directories, with or without SLURM and more. Call `./run-pipeline --help` for more information.
 
+# Also in this repository
+
+* **ancillary:** ???????
+* **documents:** Scraps of project documentation.
+* **eva_tutorials_web:** Completed tutorials for extreme value analysis code and other practice scripts.
+* **other_scripts:** Other data processing scripts that were used at one point or another.
+* **R_workspace:** Example data and R scripts.

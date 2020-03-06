@@ -16,8 +16,8 @@ def mean_scale(directory):
         d = d.drop(0, axis=1)
         # create scaling factors by dividing by PF for 1hr, 1yr
         arrs.append(np.round(d.values / d.values[3][0], 2))
-    arr = np.stack(arrs, axis=2)
-    return np.mean(arr, axis=2)
+    arr = np.stack(arrs, axis=0)
+    return arr.mean(axis=0)
 
 
 

@@ -1,4 +1,9 @@
 #!/usr/bin/perl
+#SBATCH --ntasks=64
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=64
+#SBATCH -p main,viz
+#SBATCH --account=snap
 use strict;
 use warnings;
 
@@ -8,7 +13,7 @@ run-pipeline - Execute all or part of the data-processing pipeline
 
 =head1 SYNOPSIS
 
-    run-pipeline [-h|--help] [-n|--dry-run] [-l|--noslurm] [-p|--procs PROCS]
+    run-pipeline [-h|--help] [-n|--dry-run] [-p|--procs PROCS]
         [-d|--dir DATA_DIR] [-g|--groups DATA_GROUPS] [-s|--steps STEPS]
     run-pipeline ls
 
@@ -16,14 +21,17 @@ run-pipeline - Execute all or part of the data-processing pipeline
         -h|--help:      Print help information and exit
         -n|--dry-run:   Show which steps of the pipeline will get run
                         but don't actually run them.
-        -l|--noslurm:   Don't use SLURM on the ATLAS server. Use when
-                        running on your own machine.
+        -e|--python     Override the path the to the python executable.
+                        You'll want this if using SLURM so the code
+                        still runs in your virtual environment.
         -p|--procs:     Maximum number of parallel processes to run. Not
-                        all steps in the pipeline use this, and it will be
-                        ignored if using SLURM. Defaults to: '5'
+                        all steps in the pipeline use this.
         -d|--dir:       Specify the directory where the data for the
                         pipeline lies. Defaults to:
                         '/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/'
+        --script-dir:   Specify the directory where the python scripts
+                        for the pipeline steps lie. Defaults to './pipeline'
+                        relative to the directory that this script is in.
         -g|--groups:    Specify which data groups to run.
                         Defaults to: 'all'
         -s|--steps:     Specify which steps to run.
@@ -66,6 +74,7 @@ possible data group names.
 #######################
 
 use File::Basename;
+use File::Spec qw(rel2abs);
 
 # Ordering of steps
 my @order = qw(durations ams intervals);
@@ -95,13 +104,11 @@ my @allowed_data_groups = qw(
 
 # Default arguments/flags
 my $dry_run     = 0;
-my $use_slurm   = 1;
+my $python_exec = 'python3';
 my $max_procs   = 5;
 my $data_dir    = '/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/';
 my @data_groups = @allowed_data_groups;
 my @do_steps    = (1)x@order;
-
-# script_dir is the directory containing the scripts for each step
 my $script_dir = dirname($0) . "/pipeline";
 
 #######################
@@ -156,7 +163,7 @@ sub do_durations {
     }
 
     my @command = (
-        'python3', "$script_dir/make_durations_series_wrf_data.py",
+        "$python_exec", "$script_dir/make_durations_series_wrf_data.py",
         '-p', "$data_dir/pcpt/", '-o', "$data_dir/durations/",
         '-d', "$group"
     );
@@ -187,7 +194,7 @@ sub do_ams {
     }
 
     my @command = (
-        'python3', "$script_dir/make_annual_maximum_series_wrf_data.py",
+        "$python_exec", "$script_dir/make_annual_maximum_series_wrf_data.py",
         '-p', "$data_dir/durations/", 
         '-o', "$data_dir/annual_maximum_series/",
         '-d', "$group"
@@ -221,20 +228,10 @@ sub do_intervals {
         return 1 unless ($success);
     }
 
-    # Command is different if we are using SLURM
-    my @command;
-    if ($use_slurm) {
-        @command = (
-            'sbatch', '-p', 'main,viz', '-N', '1',
-            'python3', "$script_dir/compute_return_intervals_with_confbounds.py",
-            '-o', "$data_dir/output_interval_durations", '-fn'
-        );
-    } else {
-        @command = (
-            'python3', "$script_dir/compute_return_intervals_with_confbounds.py",
-            '-o', "$data_dir/output_interval_durations", '-n', "$max_procs", '-fn'
-        );
-    }
+    my @command = (
+        "$python_exec", "$script_dir/compute_return_intervals_with_confbounds.py",
+        '-o', "$data_dir/output_interval_durations", '-n', "$max_procs", '-fn'
+    );
 
     # This step requires being able to read the files in the input directory,
     # but since the dry run doesn't guarantee its existence, we can't read
@@ -274,9 +271,10 @@ use Pod::Usage qw(pod2usage);
 Configure qw'auto_help';
 GetOptions(
     'dry-run|n'     => \$dry_run,
-    'noslurm|l'     => sub { $use_slurm = 0; },
     'procs|p=i'     => \$max_procs,
+    'python|e=s'    => \$python_exec,
     'dir|d=s'       => \$data_dir,
+    'script-dir=s'  => \$script_dir,
     'groups|g=s'    => \&parse_data_groups,
     'steps|s=s'     => \&parse_steps
 );

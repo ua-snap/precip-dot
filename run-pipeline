@@ -1,9 +1,9 @@
 #!/usr/bin/perl
-#SBATCH --ntasks=64
+#SBATCH --cpus-per-task=64
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=64
 #SBATCH -p main,viz
 #SBATCH --account=snap
+#SBATCH --export=ALL,SLURMBATCH=yes
 use strict;
 use warnings;
 
@@ -105,6 +105,7 @@ my @allowed_data_groups = qw(
 # Default arguments/flags
 my $dry_run     = 0;
 my $python_exec = 'python3';
+my $in_slurm    = $ENV{'SLURMBATCH'} eq 'yes';
 my $max_procs   = 5;
 my $data_dir    = '/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/';
 my @data_groups = @allowed_data_groups;
@@ -167,6 +168,7 @@ sub do_durations {
         '-p', "$data_dir/pcpt/", '-o', "$data_dir/durations/",
         '-d', "$group"
     );
+    unshift(@command, 'srun') if ($in_slurm);
 
     if ($dry_run) {
         print "\033[3;36m@command\033[0m\n";
@@ -199,6 +201,7 @@ sub do_ams {
         '-o', "$data_dir/annual_maximum_series/",
         '-d', "$group"
     );
+    unshift(@command, 'srun') if ($in_slurm);
 
     if ($dry_run) {
         print "\033[3;36m@command\033[0m\n";
@@ -232,6 +235,7 @@ sub do_intervals {
         "$python_exec", "$script_dir/compute_return_intervals_with_confbounds.py",
         '-o', "$data_dir/output_interval_durations", '-n', "$max_procs", '-fn'
     );
+    unshift(@command, 'srun') if ($in_slurm);
 
     # This step requires being able to read the files in the input directory,
     # but since the dry run doesn't guarantee its existence, we can't read

@@ -2,57 +2,42 @@
 
 These data constitute an effort to update the NOAA Atlas 14 for Alaska using more recent historical observed climate information and adding in the effects of a changing climate. The goal is to produce a similar set of data as is displayed and served currently through the [NOAA Atlas 14 Precipitation Frequency Web Interface](https://hdsc.nws.noaa.gov/hdsc/pfds/pfds_map_ak.html), using the WRF Dynamically Downscaled Data for Alaska produced by researchers affiliated with the Alaska Climate Adaptation Science Center (AK-CASC). This work is funded by the Alaska Department of Transportation (AKDOT) to add climate futures data to existing workflows designing culverts and other engineering features of road construction.
 
+# The Data Pipeline
 
-## How To Use This Package
+The data transformation in this project follows a pipeline with the following steps: 
 
-### Install Python (if you dont have it already)
-For installation procedures on the SNAP Atlas Cluster see [here](https://github.com/ua-snap/precip-dot/blob/master/other_scripts/How_To_Install_and_Use_Python_on_Atlas.md)
+1. **Starting point:** WRF hourly pcpt data (can be obtained [here](http://wrf-ak-ar5.s3-website-us-east-1.amazonaws.com/))
+2. **Durations:** Calculate duration series for various time periods.
+3. **AMS:** Calculate **A**nnual **M**aximum **S**eries for all duration series.
+4. **Intervals:** Calculate return intervals based off AMS.
 
-### Clone the Repository from github (this assumes you have a GitHub account and `git` CLI installed)
-```sh
-git clone git@github.com:ua-snap/precip-dot.git
-cd precip-dot
-```
+The WRF data includes 5 different models/data groups (listed below). The pipeline is repeated for every group:
 
-### Generate a Virtual Environment with this new (or existing) Python3 installation
-```sh
-# this follows the pathing and location of python3 following the above install steps
-~/.localpython/bin/python3.7 -m venv venv
+* NCAR-CCSM4_historical
+* NCAR-CCSM4_rcp85
+* ERA-Interim_historical
+* GFDL-CM3_historical
+* GFDL-CM3_rcp85
 
-# source in the new venv
-source venv/bin/activate
+The python scripts in the [pipeline directory](pipeline/) are used to execute different steps of the pipeline and the [run-pipeline](run-pipeline) script is used to execute all or part of the entire pipeline.
 
-# install (using `pip`) the needed packages
-pip install -r requirements.txt
-```
+# Running the Pipeline
 
-### Run the Pipeline
-There is a launcher script that will run all of the processing for this project.  It is located [here](https://github.com/ua-snap/precip-dot/blob/master/pipeline/run_pipeline_dot_precip.py) or in the `pipeline` sub-folder in the `precip-dot` repository you cloned above. You might have to fiddle around with the pathing therein as it is setup to work on a specific system with specific named servers and folder paths.
+## Setting Up
 
-The way to run the processing pipeline is using the following method:
+If you're running on SNAP's ATLAS server, then some of this has probably already been done for you.
 
-```sh
-# login to atlas
-ssh atlas.snap.uaf.edu
+1. **Install Dependencies:** Call `pip install -r requirements.txt` to install all of the necessary python packages (it is recommended that you do this inside a new virtual environment or conda environment). You may also need to install various libraries such as HDF5 and NetCDF to get the packages to install.
+2. **Set up Data Directory:** Decide on the directory where you want to store all the data. In that directory, create another directory called `pcpt` and download all of hourly pcpt WRF data into it. (The data can be found on S3 [here](http://wrf-ak-ar5.s3-website-us-east-1.amazonaws.com/)).
 
-# go to the repository
-cd /path/to/repo/precip-dot
+## Executing the Pipeline
 
-# activate the virtual environment
-source venv/bin/activate
+Simply calling `./run-pipeline` will execute the entire pipeline for all data sets with default options configured for running on SNAP's ATLAS server (such as using the SLURM cluster and using `/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/` as the data directory). However, the [run-pipeline](run-pipeline) script is very powerful and through various command-line options, it can be customized to run just subsets of the pipeline, in different directories, with or without SLURM and more. Call `./run-pipeline --help` for more information.
 
-# now go to the pipeline
-cd pipeline
+# Also in this repository
 
-# example 1: run with sbatch
-sbatch -p 'main' ipython run_pipeline_dot_precip.py
-
-# example 2: run on a single node (until other process launch on other nodes)
-screen srun -p main -N 1 -n 32 -w atlas01 --pty /bin/bash
-ipython run_pipeline_dot_precip.py
-
-``` 
-
-# Diagram of Processing Workflow
-
-![processflow](https://github.com/ua-snap/precip-dot/blob/master/documents/DOT_Project_ProcessFlow.png)
+* **ancillary:** ???????
+* **documents:** Scraps of project documentation.
+* **eva_tutorials_web:** Completed tutorials for extreme value analysis code and other practice scripts.
+* **other_scripts:** Other data processing scripts that were used at one point or another.
+* **R_workspace:** Example data and R scripts.

@@ -1,0 +1,25 @@
+// For format details, see https://aka.ms/vscode-remote/devcontainer.json or this file's README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.101.1/containers/debian-10-git
+{
+	"name": "CentOS 6",
+	"dockerFile": "Dockerfile",
+	"workspaceFolder": "/workspace/repo/",
+	"workspaceMount": "source=precip-dot-workspace,target=/workspace/repo/,type=volume",
+
+	"runArgs": [
+		"-v", "gpgdir:/root/.gnupg",
+		"-v", "/mnt/12TB/ctauxe/alaska_dot/pipeline/:/workspace/pipeline/"
+	],
+
+	// Set *default* container specific settings.json values on container create.
+	"settings": { 
+		"terminal.integrated.shell.linux": "/bin/bash"
+	},
+
+	// Add the IDs of extensions you want installed when the container is created.
+	"extensions": [
+		"ms-python.python",
+		"d9705996.perl-toolbox",
+		"eamodio.gitlens"
+	]
+}

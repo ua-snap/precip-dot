@@ -23,7 +23,7 @@ def run_duration( files, duration, out_fn, variable='pcpt' ):
         path to the new NetCDF file created.
 
     '''
-    ds = xr.open_mfdataset(files).load()
+    ds = xr.open_mfdataset(files, combine='by_coords').load()
     ds_dur = ds.resample(time=duration).sum()
     # out_fn = os.path.join(out_path, '{0}_{1}_sum_wrf_{2}.nc'.format(variable,OUT_NAMING_LU[duration], group))
 
@@ -62,7 +62,7 @@ def run_short_duration( fn, duration, out_fn, variable='pcpt' ):
     return out_fn
 
 if __name__ == '__main__':
-    import os, glob, dask, shutil
+    import os, glob, shutil, dask
     import xarray as xr
     import pandas as pd
     import argparse
@@ -94,11 +94,12 @@ if __name__ == '__main__':
         # filter to the rcp85 < 2060...
         years = [ int(os.path.basename(fn).split('.')[0].split('_')[-1]) for fn in files ]
         files = pd.Series(files, index=years).loc[:2059].tolist()
-        wrf_files = files.copy() # keep a copy for moving 1 hourly at the end.
+
+    wrf_files = files.copy() # keep a copy for moving 1 hourly at the end.
 
     # run the durations in a cascading fashion
     for duration in DURATIONS_PANDAS:
-        print(' duration:{}'.format(duration))
+        print(' duration:{}'.format(duration), flush=True)
         out_names = []
         if (duration in ['2H','3H','6H']):
             for fn in files:            
@@ -115,7 +116,7 @@ if __name__ == '__main__':
         files = out_names
 
         # move hourly data to the output location -- it is the starting 'duration'
-        print(' moving the base hourlies, renamed to final naming convention, to the output_path')
+        print(' moving the base hourlies, renamed to final naming convention, to the output_path', flush=True)
         years = [ os.path.basename(fn).split('.')[0].split('_')[-1] for fn in wrf_files ]
         out_filenames = [os.path.join(out_path, 'pcpt_{0}_sum_wrf_{1}_{2}.nc'.format('60m', data_group, year)) for year in years]
         _ = [ shutil.copy( fn, out_fn ) for fn,out_fn in zip(files, out_filenames) if not os.path.exists(out_fn) ]

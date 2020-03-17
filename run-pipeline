@@ -235,7 +235,7 @@ sub do_intervals {
         "$python_exec", "$script_dir/compute_return_intervals_with_confbounds.py",
         '-o', "$data_dir/output_interval_durations", '-n', "$max_procs", '-fn'
     );
-    unshift(@command, 'srun') if ($in_slurm);
+    unshift(@command, 'srun', '-c', "$max_procs") if ($in_slurm);
 
     # This step requires being able to read the files in the input directory,
     # but since the dry run doesn't guarantee its existence, we can't read

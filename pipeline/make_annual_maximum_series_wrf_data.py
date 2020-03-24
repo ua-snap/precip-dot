@@ -55,5 +55,5 @@ if __name__ == '__main__':
     DURATIONS_NOAA = ['60m','2h','3h','6h','12h','24h','2d','3d','4d','7d','10d','20d','30d','45d','60d',] # names of the durations in the NOAA tool
 
     for d in DURATIONS_NOAA:
-        print(" duration: {}".format(d))
+        print(" duration: {}".format(d), flush=True)
         run(d)

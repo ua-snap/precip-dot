@@ -43,7 +43,7 @@ RUN yum -y install git
 RUN wget -O /root/miniconda_install.sh \
     https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN test "$(sha256sum /root/miniconda_install.sh | awk '{print $1}')" = \
-    "bfe34e1fa28d6d75a7ad05fd02fa5472275673d5f5621b77380898dee1be15d2"
+    "957d2f0f0701c3d1335e3b39f235d197837ad69a944fa6f5d8ad2c686b69df3b"
 RUN yes yes | bash /root/miniconda_install.sh
 
 # Install libraries

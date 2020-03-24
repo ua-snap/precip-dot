@@ -177,27 +177,20 @@ if __name__ == '__main__':
     out_ci_upper[np.isnan(out_ci_upper)] = -9999
     out_ci_lower[np.isnan(out_ci_lower)] = -9999
     
-    # Create output datasets
-    out_coords = {'xc': ds.xc, 'yc': ds.yc, 'interval': avi}
+    # Create output dataset
     out_ds = xr.Dataset(
-        {'pf' : (['interval','xc','yc'], out)},
-        coords=out_coords
-    )
-    out_ds_ci_upper = xr.Dataset(
-        {'pf' : (['interval','xc','yc'], out_ci_upper)},
-        coords=out_coords
-    )
-    out_ds_ci_lower = xr.Dataset(
-        {'pf' : (['interval','xc','yc'], out_ci_lower)},
-        coords=out_coords
+        {
+            'pf'        : (['interval','xc','yc'], out),
+            'pf-upper'  : (['interval','xc','yc'], out_ci_upper),
+            'pf-lower'  : (['interval','xc','yc'], out_ci_lower)
+        },
+        coords= {
+            'xc'        : ds.xc,
+            'yc'        : ds.yc,
+            'interval'  : avi
+        }
     )
 
     # Write data to NetCDF
     out_fn = os.path.join(out_path, os.path.basename(fn).replace('_ams.nc','_intervals.nc'))
     out_ds.to_netcdf(out_fn)
-
-    out_fn = os.path.join(out_path, os.path.basename(fn).replace('_ams.nc','_intervals_upper.nc'))
-    out_ds_ci_upper.to_netcdf(out_fn)
-
-    out_fn = os.path.join(out_path, os.path.basename(fn).replace('_ams.nc','_intervals_ci_lower.nc'))
-    out_ds_ci_lower.to_netcdf(out_fn)

@@ -90,10 +90,6 @@ if __name__ == '__main__':
 
     # sort/group the filenames, toss in a dict
     files = sorted(glob.glob(os.path.join(path, '*{}*.nc'.format(data_group) )))
-    if 'rcp85' in data_group:
-        # filter to the rcp85 < 2060...
-        years = [ int(os.path.basename(fn).split('.')[0].split('_')[-1]) for fn in files ]
-        files = pd.Series(files, index=years).loc[:2059].tolist()
 
     wrf_files = files.copy() # keep a copy for moving 1 hourly at the end.
 

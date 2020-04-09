@@ -94,15 +94,7 @@ my %descriptions = (
     'durations' => "Compute durations series from raw hourly data",
     'ams'       => "Compute annual maximum series form durations series",
     'intervals' => "Compute return intervals (with confidence bounds) from annual maximum series",
-    'deltas'    => "Compute ratios of differences between historical and project data groups"
-);
-
-# Mapping of steps to subroutines
-my %subs = (
-    'durations' => \&do_durations,
-    'ams'       => \&do_ams,
-    'intervals' => \&do_intervals,
-    'deltas'    => \&do_deltas
+    'deltas'    => "Compute ratios of differences between historical and projected data groups"
 );
 
 # Mapping indicating whether each step should be performed.
@@ -129,184 +121,6 @@ my $in_slurm    = defined $ENV{'SLURMBATCH'};
 my $max_procs   = 5;
 my $data_dir    = '/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/';
 my $script_dir  = dirname($0) . "/pipeline";
-
-#######################
-# Helper functions
-#######################
-
-use List::Util qw(first);
-
-=for comment
-Get the order index of the specified step
-(or die if the name doesn't match anything)
-=cut
-sub get_order ($) {
-    my $step = shift @_;
-    my $idx = first { $order[$_] eq $step } 0..$#order;
-    die "Invalid step name '$step'." unless (defined($idx));
-    return $idx;
-}
-
-=for comment
-Check that a directory in the data directory exists.
-Returns a boolean for whether or not it does.
-=cut
-sub check_input_dir {
-    my $dir = shift;
-    return 1 if (-d "$data_dir/$dir");
-
-    print STDERR "Directory '$dir' does not exist in data directory.\n";
-    return 0;
-}
-
-=for comment
-Create a directory in the data directory.
-Returns a boolean indicating success (or lack thereof)
-=cut
-sub create_output_dir {
-    my $dir = shift;
-    make_path("$data_dir/$dir", {error => \my $err});
-    if ($err && @$err) {
-        print STDERR "Unable to create directory '$dir' in data directory.\n";
-        return 0;
-    }
-    return 1;
-}
-
-#######################
-# Subroutines for each step
-#######################
-
-use File::Path qw(make_path);
-
-=for comment
-do_durations GROUP
-Execute the 'durations' step of the pipeline, which calls the
-script, 'make_durations_wrf_data.py'.
-GROUP is the data group to use.
-Returns the exit code of the script or 1 if something else failed.
-=cut
-sub do_durations {
-    my $group = shift;
-    
-    unless ($dry_run) {
-        my $success = check_input_dir("pcpt") && create_output_dir("durations");
-        return 1 unless ($success);
-    }
-
-    my @command = (
-        "$python_exec", "$script_dir/make_durations_series_wrf_data.py",
-        '-p', "$data_dir/pcpt/", '-o', "$data_dir/durations/",
-        '-d', "$group"
-    );
-    unshift(@command, 'srun') if ($in_slurm);
-
-    if ($dry_run) {
-        print "\033[3;36m@command\033[0m\n";
-        return 0;
-    } else {
-        system @command;
-        return $? >> 8;
-    }
-}
-
-=for comment
-do_ams GROUP
-Execute the 'ams' step of the pipeline, which calls the
-script, 'make_annual_maximum_series_wrf_data.py'.
-GROUP is the data group to use.
-Returns the exit code of the script or 1 if something else failed.
-=cut
-sub do_ams {
-    my $group = shift;
-    
-    unless ($dry_run) {
-        my $success = check_input_dir("durations") && 
-            create_output_dir("annual_maximum_series");
-        return 1 unless ($success);
-    }
-
-    my @command = (
-        "$python_exec", "$script_dir/make_annual_maximum_series_wrf_data.py",
-        '-p', "$data_dir/durations/", 
-        '-o', "$data_dir/annual_maximum_series/",
-        '-d', "$group"
-    );
-    unshift(@command, 'srun') if ($in_slurm);
-
-    if ($dry_run) {
-        print "\033[3;36m@command\033[0m\n";
-        return 0;
-    } else {
-        system @command;
-        return $? >> 8;
-    }
-}
-
-=for comment
-do_intervals GROUP
-Execute the 'intervals' step of the pipeline, which calls the
-script, 'compute_return_intervals_with_confbounds.py'.
-GROUP is the data group to use.
-This function iterates through the files in the annual maximum series directory
-and calls the python script for each file. If the script ever returns
-a non-zero exit code, then the step will be aborted immediately.
-Returns the exit code of the script or 1 if something else failed.
-=cut
-sub do_intervals {
-    my $group = shift;
-
-    unless ($dry_run) {
-        my $success = check_input_dir("annual_maximum_series") && 
-            create_output_dir("output_interval_durations");
-        return 1 unless ($success);
-    }
-
-    my @command = (
-        "$python_exec", "$script_dir/compute_return_intervals_with_confbounds.py",
-        '-o', "$data_dir/output_interval_durations", '-n', "$max_procs", '-fn'
-    );
-    unshift(@command, 'srun', '-c', "$max_procs") if ($in_slurm);
-
-    # This step requires being able to read the files in the input directory,
-    # but since the dry run doesn't guarantee its existence, we can't read
-    # it when doing the dry run. So instead, we print an equivalent
-    # shell command that will read the directory and execute the script
-    # for each file.
-    if ($dry_run) {
-        print "\033[3;36mfor FILE in $data_dir/annual_maximum_series/*$group*.nc ; do\n\t@command \$FILE\ndone\033[0m\n";
-        return 0;
-    }
-
-    my $input_data = "$data_dir/annual_maximum_series";
-    opendir(my $dh, $input_data) || die "Can't open directory: $input_data: $!";
-    my @input_files = grep {-f "$input_data/$_" && /.*\Q$group\E.*\.nc/} readdir($dh);
-
-    # Execute command
-    foreach (@input_files) {
-        print " $_\n";
-        system(@command, "$input_data/$_");
-        if (($? >> 8) != 0) {
-            print STDERR "Error processing file: $_\n";
-            return 1;
-        }
-    }
-
-    return $? >> 8;
-}
-
-=for comment
-do_deltas GROUP
-Execute the 'deltas' step of the pipeline
-GROUP is a little different on this one in that it can be either 
-'NCAR-CCSM4' or 'GFDL-CM3' rather than one of the other data group values.
-This is because the step involves both the historical and projected data for
-a model (and doesn't use the ERA-Interim model).
-=cut
-sub do_deltas {
-    die "not implemented" unless ($dry_run);
-    return 0;
-}
 
 #######################
 # MAIN
@@ -340,6 +154,176 @@ GetOptions(
     'groups|g=s'    => \&parse_data_groups,
     'steps|s=s'     => \&parse_steps
 ) or die "Invalid options!";
+
+# There should be no other arguments after parsing options
+pod2usage("Invalid arguments.") if (@ARGV);
+
+# Confirm that data directory exists.
+die "Data directory, $data_dir, is not a directory." unless ($dry_run || -d $data_dir);
+
+#######################
+# STAGE 1
+#######################
+
+# Stage 1 consists of the steps from durations through intervals.
+# It is repeated for each of the five data groups.
+
+for my $group (grep $use_group{$_}, @allowed_data_groups) {
+    print "\033[1m>>> $group <<<\033[0m\n";
+
+    #
+    # Durations
+    #
+    if ($do_steps{'durations'}) {
+        print "Step: \033[1mDurations\033[0m...\n";
+        unless ($dry_run) {
+            check_input_dir("pcpt");
+            create_output_dir("durations");
+        }
+
+        my @command = (
+            "$python_exec", "$script_dir/make_durations_series_wrf_data.py",
+            '-p', "$data_dir/pcpt/",
+            '-o', "$data_dir/durations/",
+            '-d', "$group"
+        );
+        unshift(@command, 'srun') if ($in_slurm);
+
+        do_command(@command)
+    }
+
+    #
+    # AMS
+    #
+    if ($do_steps{'ams'}) {
+        print "Step: \033[1mAMS\033[0m...\n";
+        unless ($dry_run) {
+            check_input_dir("durations");
+            create_output_dir("annual_maximum_series");
+        }
+
+        my @command = (
+            "$python_exec", "$script_dir/make_annual_maximum_series_wrf_data.py",
+            '-p', "$data_dir/durations/", 
+            '-o', "$data_dir/annual_maximum_series/",
+            '-d', "$group"
+        );
+        unshift(@command, 'srun') if ($in_slurm);
+
+        do_command(@command);
+    }
+
+    #
+    # Intervals
+    #
+    if ($do_steps{'intervals'}) {
+        print "Step: \033[1mIntervals\033[0m...\n";
+        # The intervals step works a little differently than most of the other
+        # steps in that it must be called separately for each input file whereas
+        # the other commands simply take the input directory as an argument
+        # and iterate through each file within the python code.
+
+        unless ($dry_run) {
+            check_input_dir("annual_maximum_series");
+            create_output_dir("output_interval_durations");
+        }
+
+        my @command = (
+            "$python_exec", "$script_dir/compute_return_intervals_with_confbounds.py",
+            '-o', "$data_dir/output_interval_durations", '-n', "$max_procs", '-fn'
+        );
+        unshift(@command, 'srun', '-c', "$max_procs") if ($in_slurm);
+
+        # This step requires being able to read the files in the input directory,
+        # but since the dry run doesn't guarantee its existence, we can't read
+        # it when doing the dry run. So instead, we print an equivalent
+        # shell command that will read the directory and execute the script
+        # for each file.
+        if ($dry_run) {
+            print "\033[3;36mfor FILE in $data_dir/annual_maximum_series/*$group*.nc ; do\n\t@command \$FILE\ndone\033[0m\n";
+        } 
+        # If not a dry run, we get a list of the files in the input directory
+        # and execute the script for each one.
+        else {
+            my $input_data = "$data_dir/annual_maximum_series";
+            opendir(my $dh, $input_data) || die "Can't open directory: $input_data: $!";
+            my @input_files = grep {-f "$input_data/$_" && /.*\Q$group\E.*\.nc/} readdir($dh);
+            do_command(@command, "input_data/$_") for (@input_files);
+        }
+    }
+} # end FOR $group
+
+# If no steps after 'intervals' are being performed, we can stop now.
+exit 0 unless (grep $do_steps{$_}, @order[get_order('deltas')..$#order]);
+
+#######################
+# STAGE 2
+#######################
+
+#
+# The steps from this point forward act on pairs of historical and 
+# projected (rcp85) models, so for either the NCAR-CCSM4 or GFDL-CM3 models,
+# both the historical and rcp85 versions need to have been included.
+#
+
+# Print warnings to the user if any specified groups cannot be used.
+if ($use_group{'ERA-Interim_historical'}) {
+    print STDERR "\033[33;1mWARNING:\033[0m ERA-Interim_historical is not used".
+        " for the remaining steps, so it will be ignored.\n"
+}
+if ($use_group{'NCAR-CCSM4_historical'} xor $use_group{'NCAR-CCSM4_rcp85'}) {
+    print STDERR "\033[33;1mWARNING:\033[0m Both the historical and projected".
+        " (rcp85) versions of the NCAR-CCSM4 model must be specified.".
+        " But only one was specified, so it will be ignored.\n"
+}
+if ($use_group{'GFDL-CM3_historical'} xor $use_group{'GFDL-CM3_rcp85'}) {
+    print STDERR "\033[33;1mWARNING:\033[0m Both the historical and projected".
+        " (rcp85) versions of the GFDL-CM3 model must be specified.".
+        " But only one was specified, so it will be ignored.\n"
+}
+
+# Get which pairs of models were specified
+my %pairs = (
+    'NCAR-CCSM4' => 
+        $use_group{'NCAR-CCSM4_historical'} && $use_group{'NCAR-CCSM4_rcp85'},
+    'GFDL-CM3'   =>
+        $use_group{'GFDL-CM3_historical'} && $use_group{'GFDL-CM3_rcp85'}
+);
+my @valid_pairs = grep {$pairs{$_}} keys %pairs;
+unless (@valid_pairs) {
+    print STDERR "\033[31;1mERROR:\033[0m No valid sets of data groups were".
+        " specified for the remaining steps.\n";
+    exit 1;
+}
+
+for my $group (@valid_pairs) {
+    print "\033[1m>>> $group <<<\033[0m\n";
+    #
+    # Deltas
+    #
+    if ($do_steps{'deltas'}) {
+        print "Step: \033[1mDeltas\033[0m...\n";
+        die "not implemented" unless ($dry_run);
+    }
+}
+
+#######################
+# Helper functions
+#######################
+
+use List::Util qw(first);
+use File::Path qw(make_path);
+
+=for comment
+Get the order index of the specified step
+(or die if the name doesn't match anything)
+=cut
+sub get_order {
+    my $step = shift @_;
+    my $idx = first { $order[$_] eq $step } 0..$#order;
+    die "Invalid step name '$step'." unless (defined($idx));
+    return $idx;
+}
 
 =for comment
 Parser for DATA_GROUPS option.
@@ -381,7 +365,7 @@ sub parse_steps {
     return if ($val eq 'all');  # all is the default already, so do nothing
                                 # if 'all' was specified.
 
-    # Otherwise, assume all groups are false and just add the ones
+    # Otherwise, assume all steps are false and just add the ones
     # that the user specified.
     $do_steps{$_} = 0 foreach (keys %do_steps);
     foreach (split /,/, $val) {
@@ -398,76 +382,41 @@ sub parse_steps {
     }
 }
 
-# There should be no other arguments after parsing options
-pod2usage("Invalid arguments.") if (@ARGV);
-
-# Confirm that data directory exists.
-die "Data directory, $data_dir, is not a directory." unless ($dry_run || -d $data_dir);
-
-
-#######################
-# Execute Steps
-#######################
-
-# The steps up to 'intervals' are repeated for every data group.
-foreach my $group (grep $use_group{$_}, @allowed_data_groups) {
-    print "\033[1m>>> $group <<<\033[0m\n";
-    foreach (grep $do_steps{$_}, @order[0..get_order('intervals')]) {
-        print "Step: \033[1m$_\033[0m...\n";
-        my $exitcode = $subs{$_}->($group);
-        if ($exitcode != 0) {
-            print STDERR "\033[31;1mERROR:\033[0m Error occured executing step! Aborting...\n";
-            exit 2;
-        }
+=for comment
+Check that a directory in the data directory exists.
+Die if it does not
+=cut
+sub check_input_dir {
+    my $dir = shift;
+    unless (-d "$data_dir/$dir") {
+        print STDERR "\033[31;1mERROR:\033[0m Directory '$dir' does not exist in data directory.\n";
+        exit 1;
     }
 }
 
-# If no steps after 'intervals' are being performed, we can stop now.
-exit 0 unless (grep $do_steps{$_}, @order[get_order('deltas')..$#order]);
-
-#
-# The steps from this point forward act on pairs of historical and 
-# projected (rcp85) models, so for either the NCAR-CCSM4 or GFDL-CM3 models,
-# both the historical and rcp85 versions need to have been included.
-#
-
-# Print warnings to the user if any specified groups cannot be used.
-if ($use_group{'ERA-Interim_historical'}) {
-    print STDERR "\033[33;1mWARNING:\033[0m ERA-Interim_historical is not used".
-        " for the remaining steps, so it will be ignored.\n"
-}
-if ($use_group{'NCAR-CCSM4_historical'} xor $use_group{'NCAR-CCSM4_rcp85'}) {
-    print STDERR "\033[33;1mWARNING:\033[0m Both the historical and projected".
-        " (rcp85) versions of the NCAR-CCSM4 model must be specified.".
-        " But only one was specified, so it will be ignored.\n"
-}
-if ($use_group{'GFDL-CM3_historical'} xor $use_group{'GFDL-CM3_rcp85'}) {
-    print STDERR "\033[33;1mWARNING:\033[0m Both the historical and projected".
-        " (rcp85) versions of the GFDL-CM3 model must be specified.".
-        " But only one was specified, so it will be ignored.\n"
+=for comment
+Create a directory in the data directory.
+Die if unsuccessful
+=cut
+sub create_output_dir {
+    my $dir = shift;
+    make_path("$data_dir/$dir", {error => \my $err});
+    if ($err && @$err) {
+        print STDERR "\033[31;1mERROR:\033[0m Unable to create directory '$dir' in data directory.\n";
+        exit 1;
+    }
 }
 
-# Get which pairs of models were specified
-my %pairs = (
-    'NCAR-CCSM4' => 
-        $use_group{'NCAR-CCSM4_historical'} && $use_group{'NCAR-CCSM4_rcp85'},
-    'GFDL-CM3'   =>
-        $use_group{'GFDL-CM3_historical'} && $use_group{'GFDL-CM3_rcp85'}
-);
-my @valid_pairs = grep {$pairs{$_}} keys %pairs;
-unless (@valid_pairs) {
-    print STDERR "\033[31;1mERROR:\033[0m No valid sets of data groups were".
-        " specified for the remaining steps.\n";
-    exit 1;
-}
-
-# Execute steps
-foreach my $model (@valid_pairs) {
-    print "\033[1m>>> $model <<<\033[0m\n";
-    foreach (grep $do_steps{$_}, @order[get_order('deltas')..$#order]) {
-        print "Step: \033[1m$_\033[0m...\n";
-        my $exitcode = $subs{$_}->($model);
-        if ($exitcode != 0) {
+=for comment
+Execute a command with 'system' (unless in dry-run mode, in which case print it).
+Die if command fails
+=cut
+sub do_command {
+    if ($dry_run) {
+        print "\033[3;36m@_\033[0m\n";
+    } else {
+        system @_;
+        if ( ($? >> 8) != 0) {
             print STDERR "\033[31;1mERROR:\033[0m Error occured executing step! Aborting...\n";
             exit 2;
         }

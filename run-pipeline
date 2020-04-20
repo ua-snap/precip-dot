@@ -303,7 +303,21 @@ for my $group (@valid_pairs) {
     #
     if ($do_steps{'deltas'}) {
         print "Step: \033[1mDeltas\033[0m...\n";
-        die "not implemented" unless ($dry_run);
+
+        unless ($dry_run) {
+            check_input_dir("output_interval_durations");
+            create_output_dir("deltas");
+        }
+
+        my @command = (
+            "$python_exec", "$script_dir/compute_deltas.py",
+            '-p', "$data_dir/output_interval_durations/",
+            '-o', "$data_dir/deltas/",
+            '-d', "$group"
+        );
+        unshift(@command, 'srun') if ($in_slurm);
+
+        do_command(@command)
     }
 }
 

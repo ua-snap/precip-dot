@@ -19,7 +19,12 @@ def run(duration):
 
         proj_ds /= hist_ds
 
-        out_fn = os.path.join(out_path,os.path.basename(fn).replace('_intervals.nc', '_deltas.nc'))
+        out_fn = os.path.join(
+            out_path,
+            os.path.basename(fn)\
+                .replace('_intervals.nc', '_deltas.nc')\
+                .replace('rcp85_','')
+        )
         proj_ds.to_netcdf(out_fn)
 
         proj_ds.close()

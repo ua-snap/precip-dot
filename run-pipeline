@@ -87,14 +87,15 @@ use File::Basename;
 use File::Spec qw(rel2abs);
 
 # Ordering of steps
-my @order = qw(durations ams intervals deltas);
+my @order = qw(durations ams intervals deltas warp);
 
 # Mapping of steps to descriptions
 my %descriptions = (
     'durations' => "Compute durations series from raw hourly data",
     'ams'       => "Compute annual maximum series form durations series",
     'intervals' => "Compute return intervals (with confidence bounds) from annual maximum series",
-    'deltas'    => "Compute ratios of differences between historical and projected data groups"
+    'deltas'    => "Compute ratios of differences between historical and projected data groups",
+    'warp'      => "Warp grids of deltas to match grid of NOAA Atlas 14 data"
 );
 
 # Mapping indicating whether each step should be performed.
@@ -313,6 +314,30 @@ for my $group (@valid_pairs) {
             "$python_exec", "$script_dir/compute_deltas.py",
             '-p', "$data_dir/output_interval_durations/",
             '-o', "$data_dir/deltas/",
+            '-d', "$group"
+        );
+        unshift(@command, 'srun') if ($in_slurm);
+
+        do_command(@command)
+    }
+
+    #
+    # Warp
+    #
+    if ($do_steps{'warp'}) {
+        print "Step: \033[1mWarp\033[0m...\n";
+
+        unless ($dry_run) {
+            check_input_dir("deltas");
+            check_input_dir("NOAA");
+            create_output_dir("warped");
+        }
+
+        my @command = (
+            "$python_exec", "$script_dir/warp_grid.py",
+            '-p', "$data_dir/deltas/",
+            '-a', "$data_dir/NOAA/",
+            '-o', "$data_dir/warped/",
             '-d', "$group"
         );
         unshift(@command, 'srun') if ($in_slurm);

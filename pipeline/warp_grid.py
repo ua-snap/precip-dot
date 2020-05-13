@@ -173,5 +173,7 @@ if __name__ == '__main__':
         out_fn = os.path.join(out_path, os.path.basename(fn).replace('_deltas.nc','_warped.nc'))
         out_ds.to_netcdf(out_fn)
 
+        wrf_ds.close()
+
     for file in wrf_files:
         warp_file(file)

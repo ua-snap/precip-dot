@@ -250,7 +250,7 @@ for my $group (grep $use_group{$_}, @allowed_data_groups) {
             my $input_data = "$data_dir/annual_maximum_series";
             opendir(my $dh, $input_data) || die "Can't open directory: $input_data: $!";
             my @input_files = grep {-f "$input_data/$_" && /.*\Q$group\E.*\.nc/} readdir($dh);
-            do_command(@command, "input_data/$_") for (@input_files);
+            do { print " $_\n"; do_command(@command, "$input_data/$_") } for (@input_files);
         }
     }
 } # end FOR $group

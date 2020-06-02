@@ -144,7 +144,7 @@ if __name__ == '__main__':
         output_data = {}
         for var in ['pf', 'pf-upper', 'pf-lower']:
             output_arr = np.empty(
-                [len(intervals), len(out_xc), len(out_yc)],
+                [len(intervals), len(out_yc), len(out_xc)],
                 dtype=np.float32
             )
 
@@ -152,16 +152,16 @@ if __name__ == '__main__':
             for i in range(len(intervals)):
                 arr = wrf_ds[var][i,...,...].values
                 warped = warp_arr(arr)
-                output_arr[i] = np.rot90(warped)
+                output_arr[i] = warped
 
             output_data[var] = output_arr
 
         # Create output dataset
         out_ds = xr.Dataset(
             {
-                'pf'        : (['interval','xc','yc'], output_data['pf']),
-                'pf-upper'  : (['interval','xc','yc'], output_data['pf-upper']),
-                'pf-lower'  : (['interval','xc','yc'], output_data['pf-lower'])
+                'pf'        : (['interval','yc','xc'], output_data['pf']),
+                'pf-upper'  : (['interval','yc','xc'], output_data['pf-upper']),
+                'pf-lower'  : (['interval','yc','xc'], output_data['pf-lower'])
             },
             coords= {
                 'xc'        : out_xc,

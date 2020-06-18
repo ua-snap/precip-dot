@@ -105,7 +105,10 @@ if __name__ == '__main__':
                         atlas_arr = tmp.read(1).astype(np.float32)
 
                     # Multiply data
-                    ds[var][i,...,...] = arr * atlas_arr
+                    multiplied = arr * atlas_arr
+                    below_threshold = multiplied < 0
+                    multiplied[below_threshold] = float('nan')
+                    ds[var][i,...,...] = multiplied
 
             # Save file
             out_fn = os.path.join(out_path,os.path.basename(deltas_file).replace('_warped.nc','_combined.nc'))

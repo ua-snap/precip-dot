@@ -42,7 +42,7 @@ GetOptions(
 );
 chdir $workdir or die "unable to cd to data directory $workdir: $!";
 
-# Collect datasets, durations and time-periods/decades and build
+# Collect datasets, durations and time-periods and build
 # cartesian product to sample from.
 my @datasets = qw(GFDL-CM3 NCAR-CCSM4);
 my @durations = qw(
@@ -57,12 +57,10 @@ my %durations2noaa = (
     '3h'    => '03h',
     '6h'    => '06h'
 );
-my @decades = qw(
-    2020-2029 2030-2039 2040-2049
-    2050-2059 2060-2069 2070-2079
-    2080-2089 2090-2099
+my @periods = qw(
+    2020-2049 2050-2079 2080-2099
 );
-my @combinations = cartesian {1} \@datasets, \@durations, \@decades;
+my @combinations = cartesian {1} \@datasets, \@durations, \@periods;
 
 # Collect a random sample
 my @sample_combos;
@@ -83,8 +81,9 @@ my %step_map = (
 
         # For small durations, split up by year
         if (grep {$_[1] eq $_} qw(60m 2h 3h 6h)) {
-            # Get the file for each year of the decade.
-            my @years = map {substr($_[2],0,3).$_} (0..9); # split decade into years
+            # Get the file for each year of the period.
+            my $startyear = substr($_[2],0,4);
+            my @years = $startyear..($startyear+29); # split period into years
             for (@years) {
                 my $pattern = sprintf 'durations/pcpt_%s_sum_wrf_%s_*_%s.nc', $_[1], $_[0], $_;
                 push @files, glob($pattern);
@@ -99,7 +98,7 @@ my %step_map = (
         return @files;
     },
 
-    # The annual maximum series are split by durations, datasets and decades.
+    # The annual maximum series are split by durations, datasets and periods.
     ams         => sub {
         my @files;
 
@@ -107,7 +106,7 @@ my %step_map = (
         my $file = sprintf 'annual_maximum_series/pcpt_%s_rcp85_sum_wrf_%s_%s_ams.nc', @_;
         push @files, $file if -f $file;
 
-        # Get historical data file (there should just be one regardless of decade)
+        # Get historical data file (there should just be one regardless of period)
         my $pattern = sprintf 'annual_maximum_series/pcpt_%s_historical_sum_wrf_%s_*_ams.nc', $_[0], $_[1];
         push @files, glob($pattern);
 
@@ -122,7 +121,7 @@ my %step_map = (
         my $file = sprintf 'output_interval_durations/pcpt_%s_rcp85_sum_wrf_%s_%s_intervals.nc', @_;
         push @files, $file if -f $file;
 
-        # Get historical data file (there should just be one regardless of decade)
+        # Get historical data file (there should just be one regardless of period)
         my $pattern = sprintf 'output_interval_durations/pcpt_%s_historical_sum_wrf_%s_*_intervals.nc', $_[0], $_[1];
         push @files, glob($pattern);
 

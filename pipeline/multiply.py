@@ -69,9 +69,7 @@ if __name__ == '__main__':
         interval = interval_regex.match(base).group(1)
         return INTERVALS.index(interval)
 
-    # Decadal timeslices
-    TIMESLICES = [(str(x),str(x+9)) for x in range(2020,2100,10)]
-
+    TIMESLICES = [ ('2020','2049'), ('2050','2079'), ('2080','2099') ]
 
     for (d, d_noaa) in zip(DURATIONS, DURATIONS_NOAA):
         print(" duration: {}".format(d), flush=True)
@@ -86,7 +84,7 @@ if __name__ == '__main__':
         atlas_files_upper.sort(key=interval_index)
 
         for ts in ["{}-{}".format(x[0],x[1]) for x in TIMESLICES]:
-            print("  decade: {}".format(ts), flush=True)
+            print("  time period: {}".format(ts), flush=True)
 
             # Find the (downscaled) deltas file. (There should only be one)
             deltas_file = glob.glob(os.path.join(path,'*_{}_*_{}_{}*_warped.nc'.format(data_group,d,ts)))[0]

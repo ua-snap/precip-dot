@@ -176,44 +176,24 @@ for my $group (grep $use_group{$_}, @allowed_data_groups) {
     #
     # Durations
     #
-    if ($do_steps{'durations'}) {
-        print "Step: \033[1mDurations\033[0m...\n";
-        unless ($dry_run) {
-            check_input_dir("pcpt");
-            create_output_dir("durations");
-        }
-
-        my @command = (
-            "$python_exec", "$script_dir/make_durations_series_wrf_data.py",
-            '-p', "$data_dir/pcpt/",
-            '-o', "$data_dir/durations/",
-            '-d', "$group"
-        );
-        unshift(@command, 'srun') if ($in_slurm);
-
-        do_command(@command)
-    }
+    exec_script(
+        name    => 'Durations',
+        indir   => 'pcpt',
+        outdir  => 'durations',
+        script  => 'make_durations_series_wrf_data.py',
+        group   => $group
+    ) if $do_steps{durations};
 
     #
     # AMS
     #
-    if ($do_steps{'ams'}) {
-        print "Step: \033[1mAMS\033[0m...\n";
-        unless ($dry_run) {
-            check_input_dir("durations");
-            create_output_dir("annual_maximum_series");
-        }
-
-        my @command = (
-            "$python_exec", "$script_dir/make_annual_maximum_series_wrf_data.py",
-            '-p', "$data_dir/durations/", 
-            '-o', "$data_dir/annual_maximum_series/",
-            '-d', "$group"
-        );
-        unshift(@command, 'srun') if ($in_slurm);
-
-        do_command(@command);
-    }
+    exec_script(
+        name    => 'AMS',
+        indir   => 'durations',
+        outdir  => 'annual_maximum_series',
+        script  => 'make_annual_maximum_series_wrf_data.py',
+        group   => $group
+    ) if $do_steps{ams};
 
     #
     # Intervals
@@ -303,72 +283,37 @@ for my $group (@valid_pairs) {
     #
     # Deltas
     #
-    if ($do_steps{'deltas'}) {
-        print "Step: \033[1mDeltas\033[0m...\n";
-
-        unless ($dry_run) {
-            check_input_dir("output_interval_durations");
-            create_output_dir("deltas");
-        }
-
-        my @command = (
-            "$python_exec", "$script_dir/compute_deltas.py",
-            '-p', "$data_dir/output_interval_durations/",
-            '-o', "$data_dir/deltas/",
-            '-d', "$group"
-        );
-        unshift(@command, 'srun') if ($in_slurm);
-
-        do_command(@command)
-    }
+    exec_script(
+        name    => 'Deltas',
+        indir   => 'output_interval_durations',
+        outdir  => 'deltas',
+        script  => 'compute_deltas.py',
+        group   => $group
+    ) if $do_steps{deltas};
 
     #
     # Warp
     #
-    if ($do_steps{'warp'}) {
-        print "Step: \033[1mWarp\033[0m...\n";
-
-        unless ($dry_run) {
-            check_input_dir("deltas");
-            check_input_dir("NOAA");
-            create_output_dir("warped");
-        }
-
-        my @command = (
-            "$python_exec", "$script_dir/warp_grid.py",
-            '-p', "$data_dir/deltas/",
-            '-a', "$data_dir/NOAA/",
-            '-o', "$data_dir/warped/",
-            '-d', "$group"
-        );
-        unshift(@command, 'srun') if ($in_slurm);
-
-        do_command(@command)
-    }
+    exec_script(
+        name    => 'Warp',
+        indir   => [ 'deltas', 'NOAA' ],
+        outdir  => 'warped',
+        script  => 'warp_grid.py',
+        group   => $group,
+        extra_args  => ['-a', "$data_dir/NOAA/"]
+    ) if $do_steps{warp};
 
     #
     # Multiply
     #
-    if ($do_steps{'multiply'}) {
-        print "Step: \033[1mMultiply\033[0m...\n";
-
-        unless ($dry_run) {
-            check_input_dir("warped");
-            check_input_dir("NOAA");
-            create_output_dir("combined");
-        }
-
-        my @command = (
-            "$python_exec", "$script_dir/multiply.py",
-            '-p', "$data_dir/warped/",
-            '-a', "$data_dir/NOAA/",
-            '-o', "$data_dir/combined/",
-            '-d', "$group"
-        );
-        unshift(@command, 'srun') if ($in_slurm);
-
-        do_command(@command)
-    }
+    exec_script(
+        name    => 'Multiply',
+        indir   => [ 'warped', 'NOAA' ],
+        outdir  => 'combined',
+        script  => 'multiply.py',
+        group   => $group,
+        extra_args  => ['-a', "$data_dir/NOAA/"]
+    ) if $do_steps{multiply};
 }
 
 #######################
@@ -377,6 +322,56 @@ for my $group (@valid_pairs) {
 
 use List::Util qw(first);
 use File::Path qw(make_path);
+
+=for comment
+Execute a python script for a single step.
+Arguments are interpreted as a hash with the following options.
+- name:         Name displayed in CLI output for this step
+- indir:        Directory containing input files for this step
+                    (if this is an arrayref, multiple input directories
+                     can be specified)
+- outdir:       Directory to put output files from this step
+- group:        Data Group for this step
+- extra_args:   Array of additional arguments to pass to python script
+=cut
+sub exec_script {
+    my %params = @_;
+    print "Step: \033[1m${\$params{name}}\033[0m...\n";
+
+    # Confirm existence of input and output directories
+    # (unless its a dry run, in which case we don't care)
+    unless ($dry_run) {
+        if (ref $params{indir} eq 'ARRAY') {
+            check_input_dir($_) for @{ $params{indir} };
+        }
+        else {
+            check_input_dir($params{indir});
+        }
+        create_output_dir($params{outdir});
+    }
+
+    # Assemble command
+    my @command = (
+        "$python_exec", "$script_dir/".$params{script},
+        '-p', "$data_dir/".$params{indir},
+        '-o', "$data_dir/".$params{outdir},
+        '-d', $params{group}
+    );
+    push   (@command, @{$params{extra_args}})   if $params{extra_args};
+    unshift(@command, 'srun'                )   if ($in_slurm);
+
+    # Execute command
+    # (or just print it if this is a dry run)
+    if ($dry_run) {
+        print "\033[3;36m@command\033[0m\n";
+    } else {
+        system @command;
+        if ( ($? >> 8) != 0) {
+            print STDERR "\033[31;1mERROR:\033[0m Error occured executing step! Aborting...\n";
+            exit 2;
+        }
+    }
+}
 
 =for comment
 Get the order index of the specified step
@@ -468,21 +463,5 @@ sub create_output_dir {
     if ($err && @$err) {
         print STDERR "\033[31;1mERROR:\033[0m Unable to create directory '$dir' in data directory.\n";
         exit 1;
-    }
-}
-
-=for comment
-Execute a command with 'system' (unless in dry-run mode, in which case print it).
-Die if command fails
-=cut
-sub do_command {
-    if ($dry_run) {
-        print "\033[3;36m@_\033[0m\n";
-    } else {
-        system @_;
-        if ( ($? >> 8) != 0) {
-            print STDERR "\033[31;1mERROR:\033[0m Error occured executing step! Aborting...\n";
-            exit 2;
-        }
     }
 }

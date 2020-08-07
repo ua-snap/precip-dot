@@ -20,7 +20,7 @@ analyze and QA the pipeline.
         -n:             Specify the number of dataset/duration/time-period
                         combinations to sample. Defaults to 10.
         -d|--dir:       Specify the path to the data directory. Defaults to
-                        /workspace/Shared/Tech_Projects/DOT/project_data/.
+                        /workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt.
 
 =cut
 
@@ -34,7 +34,7 @@ use Sort::Naturally;
 
 # Parse Options
 my $sample_count = 10;
-my $workdir      = '/workspace/Shared/Tech_Projects/DOT/project_data/';
+my $workdir      = '/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt';
 Configure qw'auto_help';
 GetOptions(
     'n=i'   => \$sample_count,
@@ -151,6 +151,17 @@ my %step_map = (
         my $file = sprintf 'combined/pcpt_%s_sum_wrf_%s_%s_combined.nc', @_;
         return $file if -f $file;
         return ();
+    },
+
+    # NOAA files are split up by duration, interval and confidence interval
+    noaa    => sub {
+        my $duration = $durations2noaa{$_[1]} || $duration;
+        my @files;
+        for ('','l','u') {
+            my $pattern = sprintf 'NOAA/ak*yr%sa%s_ams.tif', $duration, $_;
+            push @files, glob($pattern);
+        }
+        return @files;
     }
 );
 

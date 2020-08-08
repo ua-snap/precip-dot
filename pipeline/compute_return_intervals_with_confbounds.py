@@ -122,75 +122,85 @@ if __name__ == '__main__':
 
     # parse some args
     parser = argparse.ArgumentParser( description='stack the hourly outputs from raw WRF outputs to NetCDF files of hourlies broken up by year.' )
-    parser.add_argument( "-fn", "--fn", action='store', dest='fn', type=str, help="path to the Annual Maximum Series file being run" )
+    parser.add_argument( "-p", "--path", action='store', dest='path', type=str, help="input directory storing the Annual Maximum Series files" )
     parser.add_argument( "-o", "--out_path", action='store', dest='out_path', type=str, help="output directory to write outputs" )
+    parser.add_argument( "-d", "--data_group", action='store', dest='data_group', type=str, help="name of the model/scenario we are running against. format:'NCAR-CCSM4_historical'" )
     parser.add_argument( "-n", "--ncpus", action='store', dest='ncpus', type=int, help="number of cpus to use" )
     
     # parse the args and unpack
     args = parser.parse_args()
-    fn = args.fn
+    path = args.path
     out_path = args.out_path
+    data_group = args.data_group
     ncpus = args.ncpus
 
-    # read in precalculated annual maximum series
-    ds = xr.open_mfdataset( fn, combine='by_coords' ).load()
-    ds_ann_max = ds['pcpt']*0.0393701 # make inches...
-    # ds_ann_max = ds['pcpt'] / 25.4 # make inches too...
-    
-    # set some return years
-    avi = np.array([2,5,10,25,50,100,200,500,1000]).astype(np.float)
+    files = sorted(glob.glob(os.path.join(path,'*{}*.nc'.format(data_group) )))
 
-    # Filter out the coordinates on the grid where the values are all zeroes.
-    # (The return interval calculation chokes on a distribution of all 
-    # zeroes).
-    # These tend to just be the coordinates along the edges of the grid,
-    # so it's a normal part of the data.
-    arr = ds_ann_max.values.copy() 
-    good_index = np.apply_along_axis(lambda x: (x == 0).all(),arr=arr, axis=0)
-    idx = np.where(good_index == True)
-    bad_idx = set(zip(*idx))
+    for fn in files:
+        print(f" {fn}", flush=True)
 
-    indexes = list(np.ndindex(arr.shape[-2:]))
+        # read in precalculated annual maximum series
+        ds = xr.open_mfdataset( fn, combine='by_coords' ).load()
+        ds_ann_max = ds['pcpt']*0.0393701 # make inches...
+        # ds_ann_max = ds['pcpt'] / 25.4 # make inches too...
+        
+        # set some return years
+        avi = np.array([2,5,10,25,50,100,200,500,1000]).astype(np.float)
 
-    # make the output arrays?
-    count,rows,cols = arr.shape
-    out = np.ctypeslib.as_ctypes(np.zeros((len(avi),rows,cols),dtype=np.float))
-    out_ci_upper = np.ctypeslib.as_ctypes(np.zeros((len(avi),rows,cols),dtype=np.float))
-    out_ci_lower = np.ctypeslib.as_ctypes(np.zeros((len(avi),rows,cols),dtype=np.float))
+        # Filter out the coordinates on the grid where the values are all zeroes.
+        # (The return interval calculation chokes on a distribution of all 
+        # zeroes).
+        # These tend to just be the coordinates along the edges of the grid,
+        # so it's a normal part of the data.
+        arr = ds_ann_max.values.copy() 
+        good_index = np.apply_along_axis(lambda x: (x == 0).all(),arr=arr, axis=0)
+        idx = np.where(good_index == True)
+        bad_idx = set(zip(*idx))
 
-    out_shared = sharedctypes.RawArray(out._type_, out)
-    out_ci_upper_shared = sharedctypes.RawArray(out_ci_upper._type_, out_ci_upper)
-    out_ci_lower_shared = sharedctypes.RawArray(out_ci_lower._type_, out_ci_lower)
+        indexes = list(np.ndindex(arr.shape[-2:]))
 
-    p = mp.Pool(ncpus)
-    p.map( run_par_update_arr, indexes )
-    p.close()
-    p.join()
+        # make the output arrays?
+        count,rows,cols = arr.shape
+        out = np.ctypeslib.as_ctypes(np.zeros((len(avi),rows,cols),dtype=np.float))
+        out_ci_upper = np.ctypeslib.as_ctypes(np.zeros((len(avi),rows,cols),dtype=np.float))
+        out_ci_lower = np.ctypeslib.as_ctypes(np.zeros((len(avi),rows,cols),dtype=np.float))
 
-    # bring these c-types arrays back to numpy arrays.
-    out = np.ctypeslib.as_array(out_shared).astype(np.float32)
-    out_ci_upper = np.ctypeslib.as_array(out_ci_upper_shared).astype(np.float32)
-    out_ci_lower = np.ctypeslib.as_array(out_ci_lower_shared).astype(np.float32)
+        out_shared = sharedctypes.RawArray(out._type_, out)
+        out_ci_upper_shared = sharedctypes.RawArray(out_ci_upper._type_, out_ci_upper)
+        out_ci_lower_shared = sharedctypes.RawArray(out_ci_lower._type_, out_ci_lower)
 
-    # update the np.nans to something more useable and SNAP-ish
-    out[np.isnan(out)] = -9999
-    out_ci_upper[np.isnan(out_ci_upper)] = -9999
-    out_ci_lower[np.isnan(out_ci_lower)] = -9999
-    
-    # Create output dataset
-    out_ds = xr.Dataset(
-        {
-            'pf'        : (['interval','xc','yc'], out),
-            'pf-upper'  : (['interval','xc','yc'], out_ci_upper),
-            'pf-lower'  : (['interval','xc','yc'], out_ci_lower)
-        },
-        coords= {
-            'xc'        : ds.xc,
-            'yc'        : ds.yc,
-            'interval'  : avi
-        }
-    )
+        p = mp.Pool(ncpus)
+        p.map( run_par_update_arr, indexes )
+        p.close()
+        p.join()
 
-    # Write data to NetCDF
-    out_fn = os.path.join(out_path, os.path.basename(fn).replace('_ams.nc','_intervals.nc'))
-    out_ds.to_netcdf(out_fn)
+        # bring these c-types arrays back to numpy arrays.
+        out = np.ctypeslib.as_array(out_shared).astype(np.float32)
+        out_ci_upper = np.ctypeslib.as_array(out_ci_upper_shared).astype(np.float32)
+        out_ci_lower = np.ctypeslib.as_array(out_ci_lower_shared).astype(np.float32)
+
+        # update the np.nans to something more useable and SNAP-ish
+        out[np.isnan(out)] = -9999
+        out_ci_upper[np.isnan(out_ci_upper)] = -9999
+        out_ci_lower[np.isnan(out_ci_lower)] = -9999
+        
+        # Create output dataset
+        out_ds = xr.Dataset(
+            {
+                'pf'        : (['interval','xc','yc'], out),
+                'pf-upper'  : (['interval','xc','yc'], out_ci_upper),
+                'pf-lower'  : (['interval','xc','yc'], out_ci_lower)
+            },
+            coords= {
+                'xc'        : ds.xc,
+                'yc'        : ds.yc,
+                'interval'  : avi
+            }
+        )
+
+        # Write data to NetCDF
+        out_fn = os.path.join(out_path, os.path.basename(fn).replace('_ams.nc','_intervals.nc'))
+        out_ds.to_netcdf(out_fn)
+
+        out_ds.close()
+        ds.close()

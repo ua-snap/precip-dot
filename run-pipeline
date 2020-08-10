@@ -323,10 +323,12 @@ sub exec_script {
         create_output_dir($params{outdir});
     }
 
+    my $main_indir = ref $params{indir} eq 'ARRAY' ? $params{indir}->[0] : $params{indir};
+
     # Assemble command
     my @command = (
         "$python_exec", "$script_dir/".$params{script},
-        '-p', "$data_dir/".$params{indir},
+        '-p', "$data_dir/".$main_indir,
         '-o', "$data_dir/".$params{outdir},
         '-d', $params{group}
     );

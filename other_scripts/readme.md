@@ -16,8 +16,10 @@ Scripts to download and extract NOAA Atlas 14 data from NOAA.
 
 Scripts used for processing and summarizing elements of the output data.
 
+- **ams_summary.py**: For a particular x/y coordinate, print a table of all of the AMS data at that point
 - **get_average_ci_width.py**: Get the average width of the confidence intervals in a return intervals file.
 - **percentiles.py**: Get the percentiles of the data (across the entire map) for a series of final output files.
 - **point_data.py**: For a particular x/y coordinate, summarize all of the final data for that point.
-- **point_data_noaa.py**: Like the other one, but gets data from the original NOAA Atlas 14 data.
+- **point_data_general.py**: Like point_data, but can extract data for some of the other pipeline steps
+- **point_data_noaa.py**: Like the other ones, but gets data from the original NOAA Atlas 14 data.
 - **random-sample.pl**: Get a random sample of the data files across the entire pipeline representing all of the data used in a particular subset of the pipeline.

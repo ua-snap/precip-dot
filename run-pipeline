@@ -40,6 +40,10 @@ run-pipeline - Execute all or part of the data-processing pipeline
                         Defaults to: 'all'
         -s|--steps:     Specify which steps to run.
                         Defaults to: 'all'
+        -v|--variant:   A string to append to the end of each directory in the
+                        pipeline, useful for creating a parallel "branch" in
+                        the pipeline. If an input directory with the variant
+                        name isn't found, the default name will be used.
 
 DATA_GROUPS is a comma-separated list of the data groups/models to execute
 the pipeline for. The elements of the list can be any of the following values:
@@ -123,6 +127,7 @@ my $in_slurm    = defined $ENV{'SLURMBATCH'};
 my $max_procs   = 5;
 my $data_dir    = '/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/';
 my $script_dir  = dirname($0) . "/pipeline";
+my $variant;
 
 #######################
 # MAIN
@@ -154,7 +159,8 @@ GetOptions(
     'dir|d=s'       => \$data_dir,
     'script-dir=s'  => \$script_dir,
     'groups|g=s'    => \&parse_data_groups,
-    'steps|s=s'     => \&parse_steps
+    'steps|s=s'     => \&parse_steps,
+    'variant|v=s'   => \$variant
 ) or die "Invalid options!";
 
 # There should be no other arguments after parsing options
@@ -302,7 +308,8 @@ Arguments are interpreted as a hash with the following options.
 - name:         Name displayed in CLI output for this step
 - indir:        Directory containing input files for this step
                     (if this is an arrayref, multiple input directories
-                     can be specified)
+                     can be specified, but only the first one is passed to
+                     the script, the others are just checked for existence)
 - outdir:       Directory to put output files from this step
 - group:        Data Group for this step
 - extra_args:   Array of additional arguments to pass to python script
@@ -313,23 +320,29 @@ sub exec_script {
 
     # Confirm existence of input and output directories
     # (unless its a dry run, in which case we don't care)
+    my $main_indir;
     unless ($dry_run) {
         if (ref $params{indir} eq 'ARRAY') {
-            check_input_dir($_) for @{ $params{indir} };
+            $main_indir = ( map check_input_dir($_), @{$params{indir}} )[0];
         }
         else {
-            check_input_dir($params{indir});
+            $main_indir = check_input_dir($params{indir});
         }
         create_output_dir($params{outdir});
     }
 
-    my $main_indir = ref $params{indir} eq 'ARRAY' ? $params{indir}->[0] : $params{indir};
+    # If its a dry run, just set $main_indir without checking for existence.
+    if ($dry_run) {
+        $main_indir = ref $params{indir} eq 'ARRAY' ? $params{indir}->[0] : $params{indir};
+        $main_indir .= $variant ? "-$variant" : "";
+    }
 
+    my $outdir = $variant ? $params{outdir}."-$variant" : $params{outdir};
     # Assemble command
     my @command = (
         "$python_exec", "$script_dir/".$params{script},
         '-p', "$data_dir/".$main_indir,
-        '-o', "$data_dir/".$params{outdir},
+        '-o', "$data_dir/".$outdir,
         '-d', $params{group}
     );
     push   (@command, @{$params{extra_args}})   if $params{extra_args};
@@ -418,22 +431,30 @@ sub parse_steps {
 
 =for comment
 Check that a directory in the data directory exists.
-Die if it does not
+Die if it does not.
+If $variant is set, then looks for a directory name with "-$variant" appended
+to it, but a directory name without the variant will still be accepted. Returns
+the name of the found directory.
 =cut
 sub check_input_dir {
-    my $dir = shift;
-    unless (-d "$data_dir/$dir") {
-        print STDERR "\033[31;1mERROR:\033[0m Directory '$dir' does not exist in data directory.\n";
-        exit 1;
-    }
+    my $dir    = shift;
+    my $vardir = "$dir-$variant";
+
+    return $vardir if ( $variant and -d "$data_dir/$dir-$variant");
+    return $dir    if (              -d "$data_dir/$dir"         );
+
+    print STDERR "\033[31;1mERROR:\033[0m Directory '$dir' does not exist in data directory.\n";
+    exit 1;
 }
 
 =for comment
 Create a directory in the data directory.
-Die if unsuccessful
+Die if unsuccessful.
+If $variant is set, creates a directory with "-$variant" appended to the name.
 =cut
 sub create_output_dir {
     my $dir = shift;
+    $dir .= "-$variant" if ($variant);
     make_path("$data_dir/$dir", {error => \my $err});
     if ($err && @$err) {
         print STDERR "\033[31;1mERROR:\033[0m Unable to create directory '$dir' in data directory.\n";

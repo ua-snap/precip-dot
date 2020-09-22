@@ -44,7 +44,7 @@ if use_return_intervals:
 if use_return_intervals:
     FILE_SUFFIX = 'intervals'
 else:
-    FILE_SUFFIX = step.replace('/','')
+    FILE_SUFFIX = step.replace('/','').split('-')[0]
 
 
 for dataset in DATASETS:

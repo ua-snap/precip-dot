@@ -4,6 +4,8 @@ These data constitute an effort to update the NOAA Atlas 14 for Alaska using mor
 
 # The Data Pipeline
 
+**TO-DO: Update with new steps**
+
 The data transformation in this project follows a pipeline with the following steps: 
 
 1. **Starting point:** WRF hourly pcpt data (can be obtained [here](http://wrf-ak-ar5.s3-website-us-east-1.amazonaws.com/)), along with the NOAA Atlas 14 data. (See the scripts in [here](other_scripts/) for help obtaining and pre-processing the NOAA Atlas 14 data).

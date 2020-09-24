@@ -17,7 +17,7 @@ def run(duration):
     for fn in proj_files:
         proj_ds = xr.open_dataset(fn)
 
-        proj_ds /= hist_ds
+        proj_ds['pf'] /= hist_ds['pf']
 
         out_fn = os.path.join(
             out_path,

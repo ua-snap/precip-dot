@@ -34,7 +34,10 @@ if not os.path.isdir(DATADIR):
     exit(1)
 
 # We need the split-up datasets if we're looking at the return intervals
-use_return_intervals = (step == "output_interval_durations")
+use_return_intervals = (
+    step.startswith('output_interval_durations') or
+    step.startswith('interval_diffs')
+)
 if use_return_intervals:
     DATASETS = [ 
         'GFDL-CM3_historical', 'NCAR-CCSM4_historical',

@@ -91,13 +91,14 @@ use File::Basename;
 use File::Spec qw(rel2abs);
 
 # Ordering of steps
-my @order = qw(durations ams intervals deltas warp multiply);
+my @order = qw(durations ams intervals diffs deltas warp multiply);
 
 # Mapping of steps to descriptions
 my %descriptions = (
     'durations' => "Compute durations series from raw hourly data",
     'ams'       => "Compute annual maximum series form durations series",
     'intervals' => "Compute return intervals (with confidence bounds) from annual maximum series",
+    'diffs'     => "Rewrite return interval confidence bounds as differences from the median",
     'deltas'    => "Compute ratios of differences between historical and projected data groups",
     'warp'      => "Warp grids of deltas to match grid of NOAA Atlas 14 data",
     'multiply'  => "Multiply by NOAA Atlas 14 data by deltas for final product."
@@ -173,7 +174,7 @@ die "Data directory, $data_dir, is not a directory." unless ($dry_run || -d $dat
 # STAGE 1
 #######################
 
-# Stage 1 consists of the steps from durations through intervals.
+# Stage 1 consists of the steps from durations through diffs.
 # It is repeated for each of the five data groups.
 
 for my $group (grep $use_group{$_}, @allowed_data_groups) {
@@ -212,6 +213,18 @@ for my $group (grep $use_group{$_}, @allowed_data_groups) {
         group   => $group,
         extra_args => ['-n', $max_procs]
     ) if $do_steps{intervals};
+
+    #
+    # Diffs
+    #
+    exec_script(
+        name    => 'Diffs',
+        indir   => 'output_interval_durations',
+        outdir  => 'interval_diffs',
+        script  => 'interval_diffs.py',
+        group   => $group
+    ) if $do_steps{diffs};
+
 } # end FOR $group
 
 # If no steps after 'intervals' are being performed, we can stop now.
@@ -264,7 +277,7 @@ for my $group (@valid_pairs) {
     #
     exec_script(
         name    => 'Deltas',
-        indir   => 'output_interval_durations',
+        indir   => 'interval_diffs',
         outdir  => 'deltas',
         script  => 'compute_deltas.py',
         group   => $group

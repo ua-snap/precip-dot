@@ -76,12 +76,8 @@ if __name__ == '__main__':
 
         # Get NOAA Atlas files for this duration
         atlas_files         = glob.glob(os.path.join(atlas_path,'ak*{}a_ams.tif'.format(d_noaa)))
-        atlas_files_lower   = glob.glob(os.path.join(atlas_path,'ak*{}al_ams.tif'.format(d_noaa)))
-        atlas_files_upper   = glob.glob(os.path.join(atlas_path,'ak*{}au_ams.tif'.format(d_noaa)))
         # Ana sort by interval
         atlas_files.sort(key=interval_index)
-        atlas_files_lower.sort(key=interval_index)
-        atlas_files_upper.sort(key=interval_index)
 
         for ts in ["{}-{}".format(x[0],x[1]) for x in TIMESLICES]:
             print("  time period: {}".format(ts), flush=True)
@@ -91,22 +87,24 @@ if __name__ == '__main__':
 
             ds = xr.open_dataset(deltas_file)
 
-            # Iterate through each variable
-            for (var, atlas_files_list) in zip(
-                ['pf', 'pf-upper', 'pf-lower'], 
-                [atlas_files, atlas_files_upper, atlas_files_lower]
-            ):
-                # Iterate through each return interval
-                for i in range(len(ds.interval)):
-                    arr = ds[var][i,...,...].values
-                    with rasterio.open(atlas_files_list[i]) as tmp:
-                        atlas_arr = tmp.read(1).astype(np.float32)
+            # Iterate through each return interval
+            for i in range(len(ds.interval)):
+                arr       = ds['pf'      ][i,...,...].values
+                arr_upper = ds['pf-upper'][i,...,...].values
+                arr_lower = ds['pf-lower'][i,...,...].values
+                with rasterio.open(atlas_files[i]) as tmp:
+                    atlas_arr = tmp.read(1).astype(np.float32)
 
-                    # Multiply data
-                    multiplied = arr * atlas_arr
-                    below_threshold = multiplied < 0
-                    multiplied[below_threshold] = float('nan')
-                    ds[var][i,...,...] = multiplied
+                # Multiply data
+                multiplied = arr * atlas_arr
+                below_threshold = multiplied < 0
+                multiplied[below_threshold] = float('nan')
+                ds['pf'][i,...,...] = multiplied
+
+                # Re-apply diff'ed confidence intervals
+                # (converting from millimeters to thousandths of an inch)
+                ds['pf-upper'][i,...,...] = multiplied + ( arr_upper * 39.3701 )
+                ds['pf-lower'][i,...,...] = multiplied + ( arr_lower * 39.3701 )
 
             # Save file
             out_fn = os.path.join(out_path,os.path.basename(deltas_file).replace('_warped.nc','_combined.nc'))

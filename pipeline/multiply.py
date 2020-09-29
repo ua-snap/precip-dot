@@ -101,11 +101,6 @@ if __name__ == '__main__':
                 multiplied[below_threshold] = float('nan')
                 ds['pf'][i,...,...] = multiplied
 
-                # Re-apply diff'ed confidence intervals
-                # (converting from millimeters to thousandths of an inch)
-                ds['pf-upper'][i,...,...] = multiplied + ( arr_upper * 39.3701 )
-                ds['pf-lower'][i,...,...] = multiplied + ( arr_lower * 39.3701 )
-
             # Save file
             out_fn = os.path.join(out_path,os.path.basename(deltas_file).replace('_warped.nc','_combined.nc'))
             ds.to_netcdf(out_fn)

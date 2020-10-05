@@ -2,7 +2,7 @@
 # Basically the inverse of interval_diffs.py
 # Rewrite confidence intervals as their absolute values as opposed to their
 # differences from the mean
-# (oh and convert them from millimeters to thousandts of an inch)
+# (oh and convert them from inches to thousandts of an inch)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 import os, glob
@@ -13,8 +13,8 @@ def run(fn):
 
     ds = xr.open_dataset(fn)
 
-    ds['pf-upper'] = ds['pf'] + ( ds['pf-upper'] * 39.3701 )
-    ds['pf-lower'] = ds['pf'] + ( ds['pf-lower'] * 39.3701 )
+    ds['pf-upper'] = ds['pf'] + ( ds['pf-upper'] * 1000 )
+    ds['pf-lower'] = ds['pf'] + ( ds['pf-lower'] * 1000 )
 
     out_fn = os.path.join(
         out_path,

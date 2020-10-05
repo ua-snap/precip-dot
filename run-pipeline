@@ -329,7 +329,7 @@ for my $group (@valid_pairs) {
         outdir  => 'final',
         script  => 'interval_undiff.py',
         group   => $group
-    ) if $do_steps{fudge};
+    ) if $do_steps{undiff};
 }
 
 #######################

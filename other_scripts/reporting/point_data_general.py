@@ -5,8 +5,8 @@
 # step at that point.
 #
 # In practice, this will only work for the 
-# directories output_interval_durations, deltas,
-# warped and combined
+# directories intervals, diff, deltas, warp, multiply
+# fudge and undiff
 ##############################################
 
 import sys, os
@@ -35,8 +35,7 @@ if not os.path.isdir(DATADIR):
 
 # We need the split-up datasets if we're looking at the return intervals
 use_return_intervals = (
-    step.startswith('output_interval_durations') or
-    step.startswith('interval_diffs')
+    step.startswith('intervals') or step.startswith('diff')
 )
 if use_return_intervals:
     DATASETS = [ 
@@ -44,10 +43,7 @@ if use_return_intervals:
         'GFDL-CM3_rcp85', 'NCAR-CCSM4_rcp85'
     ]
 
-if use_return_intervals:
-    FILE_SUFFIX = 'intervals'
-else:
-    FILE_SUFFIX = step.replace('/','').split('-')[0]
+FILE_SUFFIX = step.replace('/','').split('-')[0]
 
 
 for dataset in DATASETS:

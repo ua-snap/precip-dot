@@ -7,7 +7,7 @@
 import sys, os
 import xarray as xr
 
-DATADIR     = "/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/combined/"
+DATADIR     = "/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/undiff/"
 
 DURATIONS   = [ '60m','2h','3h','6h','12h','24h','3d','4d','7d','10d','20d','30d','45d','60d' ]
 DATASETS    = [ 'GFDL-CM3', 'NCAR-CCSM4' ]
@@ -36,7 +36,7 @@ for dataset in DATASETS:
             ts_str = f"{ts[0]}-{ts[1]}"
             ds = xr.open_dataset(os.path.join(
                 DATADIR,
-                f"pcpt_{dataset}_sum_wrf_{duration}_{ts_str}_combined.nc")
+                f"pcpt_{dataset}_sum_wrf_{duration}_{ts_str}_undiff.nc")
             )
 
             for var in VARIABLES:

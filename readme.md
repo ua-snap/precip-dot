@@ -4,17 +4,18 @@ These data constitute an effort to update the NOAA Atlas 14 for Alaska using mor
 
 # The Data Pipeline
 
-**TO-DO: Update with new steps**
-
 The data transformation in this project follows a pipeline with the following steps: 
 
 1. **Starting point:** WRF hourly pcpt data (can be obtained [here](http://wrf-ak-ar5.s3-website-us-east-1.amazonaws.com/)), along with the NOAA Atlas 14 data. (See the scripts in [here](other_scripts/) for help obtaining and pre-processing the NOAA Atlas 14 data).
 2. **Durations:** Calculate duration series for various time periods.
 3. **AMS:** Calculate **A**nnual **M**aximum **S**eries for all duration series.
 4. **Intervals:** Calculate return intervals based off AMS.
-5. **Deltas:** Calculate the difference, as a ratio, between the historical WRF data and the multiple decades of projected data.
-6. **Warp:** Reinterpolate this grid of deltas to match the grid of the NOAA Atlas 14 data.
-7. **Multiply:** Multiply the NOAA Atlas 14 data by the deltas to get the final precipitation estimates.
+5. **Diff:** Rewrite confidence bounds as differences from the median
+6. **Deltas:** Calculate the difference, as a ratio, between the historical WRF data and the multiple decades of projected data.
+7. **Warp:** Reinterpolate this grid of deltas to match the grid of the NOAA Atlas 14 data.
+8. **Multiply:** Multiply the NOAA Atlas 14 data by the deltas to get the final precipitation estimates.
+9. **Fudge:** Fudge values for consistency
+10. **Undiff:** Re-apply the diffs created in the Diff step
 
 The WRF data includes 5 different models/data groups (listed below). The pipeline is repeated for every group:
 

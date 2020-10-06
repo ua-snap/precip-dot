@@ -82,14 +82,20 @@ def iterate_durations():
                 higher_ds['pf'][...,...,...] = higher_arr
 
             # Save results
-            higher_file_out = os.path.join(out_path,os.path.basename(higher_file))
+            higher_file_out = os.path.join(
+                out_path,os.path.basename(higher_file)\
+                    .replace('_multiply.nc','_fudge.nc')
+            )
             higher_ds.to_netcdf(higher_file_out)
 
             # The lower duration doesn't get changed, but we need to ensure that
             # the lowest duration (60m) is still in the output directory, so
             # we simply save it back out on the first pass.
             if i == 1:
-                lower_file_out = os.path.join(out_path,os.path.basename(lower_file))
+                lower_file_out = os.path.join(
+                    out_path,os.path.basename(lower_file)\
+                    .replace('_multiply.nc','_fudge.nc')
+                )
                 lower_ds.to_netcdf(lower_file_out)
 
             higher_ds.close()
@@ -117,7 +123,7 @@ def iterate_intervals():
     files = glob(os.path.join(out_path,f"*_{data_group}_*.nc"))
 
     for file in files:
-        print(f" {file}", flush=True)
+        print(f" {os.path.basename(file)}", flush=True)
 
         ds = xr.load_dataset(file)
 

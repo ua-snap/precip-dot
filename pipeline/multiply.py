@@ -2,38 +2,8 @@
 # Multiply NOAA Atlas 14 data by deltas to get final precipitation estimates
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-def run(duration):
-
-    # Get historical data
-    # (for the historical data, there should only be one file for this duration)
-    hist_file = glob.glob(os.path.join(path,'*_{}_historical_*_{}*_intervals.nc'.format(data_group,duration)))[0]
-    hist_ds   = xr.open_dataset(hist_file)
-
-    # Get projected date
-    # (There should be one for each decade for this duration)
-    proj_files = glob.glob(os.path.join(path,'*_{}_rcp85_*_{}*_intervals.nc'.format(data_group,duration)))
-
-    # Compute Deltas
-    for fn in proj_files:
-        proj_ds = xr.open_dataset(fn)
-
-        proj_ds /= hist_ds
-
-        out_fn = os.path.join(
-            out_path,
-            os.path.basename(fn)\
-                .replace('_intervals.nc', '_deltas.nc')\
-                .replace('rcp85_','')
-        )
-        proj_ds.to_netcdf(out_fn)
-
-        proj_ds.close()
-
-    hist_ds.close()
-
-
 if __name__ == '__main__':
-    import os, glob, itertools
+    import os, glob
     import re
     import xarray as xr
     import rasterio
@@ -83,7 +53,7 @@ if __name__ == '__main__':
             print("  time period: {}".format(ts), flush=True)
 
             # Find the (downscaled) deltas file. (There should only be one)
-            deltas_file = glob.glob(os.path.join(path,'*_{}_*_{}_{}*_warped.nc'.format(data_group,d,ts)))[0]
+            deltas_file = glob.glob(os.path.join(path,'*_{}_*_{}_{}*_warp.nc'.format(data_group,d,ts)))[0]
 
             ds = xr.open_dataset(deltas_file)
 
@@ -102,7 +72,7 @@ if __name__ == '__main__':
                 ds['pf'][i,...,...] = multiplied
 
             # Save file
-            out_fn = os.path.join(out_path,os.path.basename(deltas_file).replace('_warped.nc','_combined.nc'))
+            out_fn = os.path.join(out_path,os.path.basename(deltas_file).replace('_warp.nc','_multiply.nc'))
             ds.to_netcdf(out_fn)
 
             ds.close()

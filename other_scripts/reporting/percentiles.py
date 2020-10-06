@@ -1,6 +1,6 @@
 ##############################################
 # For a list of final result files (that is, the 
-# the output of the "combined" step.), print a CSV containing
+# the output of the "undiff" step.), print a CSV containing
 # a series of percentiles for the values. (One row for
 # each dataset/duration/decade/return interval)
 ##############################################

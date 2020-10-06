@@ -137,7 +137,7 @@ if __name__ == '__main__':
     files = sorted(glob.glob(os.path.join(path,'*{}*.nc'.format(data_group) )))
 
     for fn in files:
-        print(f" {fn}", flush=True)
+        print(f" {os.path.basename(fn)}", flush=True)
 
         # read in precalculated annual maximum series
         ds = xr.open_mfdataset( fn, combine='by_coords' ).load()

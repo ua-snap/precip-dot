@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
     # Use the first one as a template to create the grid metadata for the WRF grids.
     first_wrf = wrf_files[0]
-    print(" Using {} as initial file.".format(first_wrf), flush=True )
+    print(" Using {} as initial file.".format(os.path.basename(first_wrf)), flush=True )
     ds = xr.open_dataset(first_wrf)
 
     res = 20000 # 20km resolution
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     ds.close()
 
     def warp_file(fn):
-        print(" {}...".format(fn), flush=True)
+        print(" {}...".format(os.path.basename(fn)), flush=True)
         wrf_ds = xr.open_dataset(fn)
         intervals = wrf_ds.interval
 
@@ -170,7 +170,7 @@ if __name__ == '__main__':
             }
         )
         # Write output to NetCDF
-        out_fn = os.path.join(out_path, os.path.basename(fn).replace('_deltas.nc','_warped.nc'))
+        out_fn = os.path.join(out_path, os.path.basename(fn).replace('_deltas.nc','_warp.nc'))
         out_ds.to_netcdf(out_fn)
 
         wrf_ds.close()

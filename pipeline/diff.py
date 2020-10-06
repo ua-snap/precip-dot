@@ -1,8 +1,5 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-# Basically the inverse of interval_diffs.py
-# Rewrite confidence intervals as their absolute values as opposed to their
-# differences from the mean
-# (oh and convert them from inches to thousandts of an inch)
+# Rewrite pf-upper and pf-lower as their differences from pf
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 import os, glob
@@ -13,12 +10,13 @@ def run(fn):
 
     ds = xr.open_dataset(fn)
 
-    ds['pf-upper'] = ds['pf'] + ( ds['pf-upper'] * 1000 )
-    ds['pf-lower'] = ds['pf'] + ( ds['pf-lower'] * 1000 )
+    ds['pf-upper'] = ds['pf-upper'] - ds['pf']
+    ds['pf-lower'] = ds['pf-lower'] - ds['pf']
 
     out_fn = os.path.join(
         out_path,
-        os.path.basename(fn)
+        os.path.basename(fn)\
+            .replace('_intervals.nc','_diff.nc')
     )
     ds.to_netcdf(out_fn)
 
@@ -41,5 +39,5 @@ if __name__ == '__main__':
     files = sorted( glob.glob(os.path.join(path, f'*{data_group}*.nc')) )
 
     for fn in files:
-        print(f" {fn}", flush=True)
+        print(f" {os.path.basename(fn)}", flush=True)
         run(fn)

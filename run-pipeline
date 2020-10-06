@@ -91,19 +91,19 @@ use File::Basename;
 use File::Spec qw(rel2abs);
 
 # Ordering of steps
-my @order = qw(durations ams intervals diffs deltas warp multiply fudge undiff);
+my @order = qw(durations ams intervals diff deltas warp multiply fudge undiff);
 
 # Mapping of steps to descriptions
 my %descriptions = (
     'durations' => "Compute durations series from raw hourly data",
     'ams'       => "Compute annual maximum series form durations series",
     'intervals' => "Compute return intervals (with confidence bounds) from annual maximum series",
-    'diffs'     => "Rewrite return interval confidence bounds as differences from the median",
+    'diff'     => "Rewrite return interval confidence bounds as differences from the median",
     'deltas'    => "Compute ratios of differences between historical and projected data groups",
     'warp'      => "Warp grids of deltas to match grid of NOAA Atlas 14 data",
     'multiply'  => "Multiply by NOAA Atlas 14 data by deltas for final product.",
     'fudge'     => "Fudge values for consistency",
-    'undiff'    => "Re-apply the diffs created in the diffs step"
+    'undiff'    => "Re-apply the diffs created in the diff step"
 );
 
 # Mapping indicating whether each step should be performed.
@@ -189,7 +189,7 @@ for my $group (grep $use_group{$_}, @allowed_data_groups) {
         name    => 'Durations',
         indir   => 'pcpt',
         outdir  => 'durations',
-        script  => 'make_durations_series_wrf_data.py',
+        script  => 'durations.py',
         group   => $group
     ) if $do_steps{durations};
 
@@ -199,8 +199,8 @@ for my $group (grep $use_group{$_}, @allowed_data_groups) {
     exec_script(
         name    => 'AMS',
         indir   => 'durations',
-        outdir  => 'annual_maximum_series',
-        script  => 'make_annual_maximum_series_wrf_data.py',
+        outdir  => 'ams',
+        script  => 'ams.py',
         group   => $group
     ) if $do_steps{ams};
 
@@ -209,9 +209,9 @@ for my $group (grep $use_group{$_}, @allowed_data_groups) {
     #
     exec_script(
         name    => 'Intervals',
-        indir   => 'annual_maximum_series',
-        outdir  => 'output_interval_durations',
-        script  => 'compute_return_intervals_with_confbounds.py',
+        indir   => 'ams',
+        outdir  => 'intervals',
+        script  => 'intervals.py',
         group   => $group,
         extra_args => ['-n', $max_procs]
     ) if $do_steps{intervals};
@@ -221,11 +221,11 @@ for my $group (grep $use_group{$_}, @allowed_data_groups) {
     #
     exec_script(
         name    => 'Diffs',
-        indir   => 'output_interval_durations',
-        outdir  => 'interval_diffs',
-        script  => 'interval_diffs.py',
+        indir   => 'intervals',
+        outdir  => 'diff',
+        script  => 'diff.py',
         group   => $group
-    ) if $do_steps{diffs};
+    ) if $do_steps{diff};
 
 } # end FOR $group
 
@@ -279,9 +279,9 @@ for my $group (@valid_pairs) {
     #
     exec_script(
         name    => 'Deltas',
-        indir   => 'interval_diffs',
+        indir   => 'diff',
         outdir  => 'deltas',
-        script  => 'compute_deltas.py',
+        script  => 'deltas.py',
         group   => $group
     ) if $do_steps{deltas};
 
@@ -291,8 +291,8 @@ for my $group (@valid_pairs) {
     exec_script(
         name    => 'Warp',
         indir   => [ 'deltas', 'NOAA' ],
-        outdir  => 'warped',
-        script  => 'warp_grid.py',
+        outdir  => 'warp',
+        script  => 'warp.py',
         group   => $group,
         extra_args  => ['-a', "$data_dir/NOAA/"]
     ) if $do_steps{warp};
@@ -302,8 +302,8 @@ for my $group (@valid_pairs) {
     #
     exec_script(
         name    => 'Multiply',
-        indir   => [ 'warped', 'NOAA' ],
-        outdir  => 'combined',
+        indir   => [ 'warp', 'NOAA' ],
+        outdir  => 'multiply',
         script  => 'multiply.py',
         group   => $group,
         extra_args  => ['-a', "$data_dir/NOAA/"]
@@ -314,9 +314,9 @@ for my $group (@valid_pairs) {
     #
     exec_script(
         name    => 'Fudging',
-        indir   => 'combined',
-        outdir  => 'fudged',
-        script  => 'fudging.py',
+        indir   => 'multiply',
+        outdir  => 'fudge',
+        script  => 'fudge.py',
         group   => $group
     ) if $do_steps{fudge};
 
@@ -325,9 +325,9 @@ for my $group (@valid_pairs) {
     #
     exec_script(
         name    => 'Undiff',
-        indir   => 'fudged',
-        outdir  => 'final',
-        script  => 'interval_undiff.py',
+        indir   => 'fudge',
+        outdir  => 'undiff',
+        script  => 'undiff.py',
         group   => $group
     ) if $do_steps{undiff};
 }
@@ -475,10 +475,13 @@ the name of the found directory.
 =cut
 sub check_input_dir {
     my $dir    = shift;
-    my $vardir = "$dir-$variant";
+    
+    if (defined $variant) {
+        my $vardir = "$dir-$variant";
+        return $vardir if -d "$data_dir/$dir-$variant";
+    }
 
-    return $vardir if ( $variant and -d "$data_dir/$dir-$variant");
-    return $dir    if (              -d "$data_dir/$dir"         );
+    return $dir if -d "$data_dir/$dir";
 
     print STDERR "\033[31;1mERROR:\033[0m Directory '$dir' does not exist in data directory.\n";
     exit 1;

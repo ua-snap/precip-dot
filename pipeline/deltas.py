@@ -6,12 +6,12 @@ def run(duration):
 
     # Get historical data
     # (for the historical data, there should only be one file for this duration)
-    hist_file = glob.glob(os.path.join(path,'*_{}_historical_*_{}*_intervals.nc'.format(data_group,duration)))[0]
+    hist_file = glob.glob(os.path.join(path,'*_{}_historical_*_{}*_diff.nc'.format(data_group,duration)))[0]
     hist_ds   = xr.open_dataset(hist_file)
 
     # Get projected date
     # (There should be one for each decade for this duration)
-    proj_files = glob.glob(os.path.join(path,'*_{}_rcp85_*_{}*_intervals.nc'.format(data_group,duration)))
+    proj_files = glob.glob(os.path.join(path,'*_{}_rcp85_*_{}*_diff.nc'.format(data_group,duration)))
 
     # Compute Deltas
     for fn in proj_files:
@@ -22,7 +22,7 @@ def run(duration):
         out_fn = os.path.join(
             out_path,
             os.path.basename(fn)\
-                .replace('_intervals.nc', '_deltas.nc')\
+                .replace('_diff.nc', '_deltas.nc')\
                 .replace('rcp85_','')
         )
         proj_ds.to_netcdf(out_fn)

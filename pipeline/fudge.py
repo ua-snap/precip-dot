@@ -71,7 +71,7 @@ def iterate_durations():
             # mask represents the indices where the higher duration is less
             # than the lower duration
             diff = higher_arr - lower_arr
-            mask = diff < 0
+            mask = diff <= 0
             num = np.count_nonzero(mask)
 
             # Adjust values
@@ -132,7 +132,7 @@ def iterate_intervals():
             lower_arr  = ds['pf'][i-1,...,...].values
 
             diff = higher_arr - lower_arr
-            mask = diff < 0
+            mask = diff <= 0
             num = np.count_nonzero(mask)
 
             if num > 0:

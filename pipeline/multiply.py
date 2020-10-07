@@ -26,9 +26,9 @@ if __name__ == '__main__':
     data_group = args.data_group
 
     # names of the durations in the deltas files
-    DURATIONS       = ['60m','2h', '3h', '6h', '12h','24h','3d','4d','7d','10d','20d','30d','45d','60d',]
-    # Those same durations, but as they are named in the NOAA files ('2d' is missing)
-    DURATIONS_NOAA  = ['01h','02h','03h','06h','12h','24h','3d','4d','7d','10d','20d','30d','45d','60d',]
+    DURATIONS       = ['60m','2h', '3h', '6h', '12h','24h', '2d',  '3d','4d','7d','10d','20d','30d','45d','60d',]
+    # Those same durations, but as they are named in the NOAA files 
+    DURATIONS_NOAA  = ['01h','02h','03h','06h','12h','24h', '48h', '3d','4d','7d','10d','20d','30d','45d','60d',]
     # Intervals as they are named in NOAA files
     INTERVALS       = ['2yr', '5yr', '10yr', '25yr', '50yr', '100yr', '200yr', '500yr', '1000yr']
 

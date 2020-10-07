@@ -25,7 +25,7 @@ path = None
 out_path = None
 data_group = None
 
-DURATIONS = ['60m','2h', '3h', '6h', '12h','24h','3d','4d','7d','10d','20d','30d','45d','60d',]
+DURATIONS = ['60m','2h', '3h', '6h', '12h','24h', '2d', '3d','4d','7d','10d','20d','30d','45d','60d',]
 visited_durations = [False for _ in DURATIONS]
 
 # Iterate over all of the durations and fudge values to ensure they consistently

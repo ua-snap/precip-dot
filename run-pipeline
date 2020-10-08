@@ -103,7 +103,7 @@ my %descriptions = (
     'warp'      => "Warp grids of deltas to match grid of NOAA Atlas 14 data",
     'multiply'  => "Multiply by NOAA Atlas 14 data by deltas for final product.",
     'fudge'     => "Fudge values for consistency",
-    'undiff'    => "Re-apply the diffs created in the diff step"
+    'undiff'    => "Re-apply the diffs created in the diff step and add header information to data"
 );
 
 # Mapping indicating whether each step should be performed.

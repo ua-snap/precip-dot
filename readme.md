@@ -15,7 +15,7 @@ The data transformation in this project follows a pipeline with the following st
 7. **Warp:** Reinterpolate this grid of deltas to match the grid of the NOAA Atlas 14 data.
 8. **Multiply:** Multiply the NOAA Atlas 14 data by the deltas to get the final precipitation estimates.
 9. **Fudge:** Fudge values for consistency
-10. **Undiff:** Re-apply the diffs created in the Diff step
+10. **Undiff:** Re-apply the diffs created in the Diff step and add header information to data
 
 The WRF data includes 5 different models/data groups (listed below). The pipeline is repeated for every group:
 

@@ -9,7 +9,7 @@ import xarray as xr
 
 DATADIR     = "/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/undiff/"
 
-DURATIONS   = [ '60m','2h','3h','6h','12h','24h','3d','4d','7d','10d','20d','30d','45d','60d' ]
+DURATIONS   = [ '60m','2h','3h','6h','12h','24h','2d','3d','4d','7d','10d','20d','30d','45d','60d' ]
 DATASETS    = [ 'GFDL-CM3', 'NCAR-CCSM4' ]
 TIMESLICES  = [ ('2020','2049'), ('2050','2079'), ('2080','2099') ]
 VARIABLES   = [ 'pf-upper', 'pf', 'pf-lower']

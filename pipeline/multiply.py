@@ -60,8 +60,6 @@ if __name__ == '__main__':
             # Iterate through each return interval
             for i in range(len(ds.interval)):
                 arr       = ds['pf'      ][i,...,...].values
-                arr_upper = ds['pf-upper'][i,...,...].values
-                arr_lower = ds['pf-lower'][i,...,...].values
                 with rasterio.open(atlas_files[i]) as tmp:
                     atlas_arr = tmp.read(1).astype(np.float32)
 

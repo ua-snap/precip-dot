@@ -9,7 +9,7 @@ import xarray as xr
 
 DATADIR     = "/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/annual_maximum_series/"
 
-DURATIONS   = [ '60m','2h','3h','6h','12h','24h','3d','4d','7d','10d','20d','30d','45d','60d' ]
+DURATIONS   = [ '60m','2h','3h','6h','12h','24h','2d','3d','4d','7d','10d','20d','30d','45d','60d' ]
 DATASETS = [ 
     'GFDL-CM3_historical', 'NCAR-CCSM4_historical',
     'GFDL-CM3_rcp85', 'NCAR-CCSM4_rcp85'

@@ -11,7 +11,7 @@ import rasterio
 
 DATADIR     = "/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/NOAA/"
 
-DURATIONS   = [ '01h','02h','03h','06h','12h','24h','3d','4d','7d','10d','20d','30d','45d','60d' ]
+DURATIONS   = [ '01h','02h','03h','06h','12h','24h','2d','3d','4d','7d','10d','20d','30d','45d','60d' ]
 INTERVALS   = [ '2yr', '5yr', '10yr', '25yr', '50yr', '100yr', '200yr', '500yr', '1000yr' ]
 
 if len(sys.argv) != 3:

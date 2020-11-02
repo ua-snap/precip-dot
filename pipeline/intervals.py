@@ -187,9 +187,9 @@ if __name__ == '__main__':
         # Create output dataset
         out_ds = xr.Dataset(
             {
-                'pf'        : (['interval','xc','yc'], out),
-                'pf-upper'  : (['interval','xc','yc'], out_ci_upper),
-                'pf-lower'  : (['interval','xc','yc'], out_ci_lower)
+                'pf'        : (['interval','yc','xc'], out),
+                'pf-upper'  : (['interval','yc','xc'], out_ci_upper),
+                'pf-lower'  : (['interval','yc','xc'], out_ci_lower)
             },
             coords= {
                 'xc'        : ds.xc,

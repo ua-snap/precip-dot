@@ -46,6 +46,12 @@ def run(fn):
         }
     )
 
+    # Round off below-zero values
+    arr = ds_out['pf_lower'][...,...,...].values
+    below_threshold = arr < 0
+    arr[below_threshold] = 0
+    ds_out['pf_lower'][...,...,...] = arr
+
     # Variable descriptions
     ds_out['pf']      .attrs['long_name'] = "AMS-based precipitation frequency estimates"
     ds_out['pf_upper'].attrs['long_name'] = "Upper 95% confidence bounds on AMS-based precipitation frequency estimates"
@@ -58,13 +64,15 @@ def run(fn):
     # Coordinate descriptions
     ds_out.interval.attrs['long_name']     = "Annual exceedance probability"
     ds_out.interval.attrs['units']         = "1/years"
+    ds_out.xc      .attrs["units"]         = "meters"
     ds_out.xc      .attrs['long_name']     = "X-coordinate in projected coordinate system"
     ds_out.xc      .attrs['standard_name'] = "projection_x_coordinate"
+    ds_out.yc      .attrs["units"]         = "meters"
     ds_out.yc      .attrs['long_name']     = "Y-coordinate in projected coordinate system"
     ds_out.yc      .attrs['standard_name'] = "projection_y_coordinate"
 
     # Global Attributes
-    ds_out.attrs["Conventions"]      = "CF"
+    ds_out.attrs["Conventions"]      = "CF-1.8"
     ds_out.attrs["institution"]      = "Scenarios Network for Alaska + Arctic Planning"
     ds_out.attrs["contact"]          = "kmredilla@alaska.edu"
     ds_out.attrs["history"]          =  "{} Python".format(str(datetime.utcnow()))

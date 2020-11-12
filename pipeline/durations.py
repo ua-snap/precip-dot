@@ -14,16 +14,16 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 # some global naming and duration args
-DURATIONS_NOAA = ['2h','3h','6h','12h','24h','2d','3d','4d','7d','10d','20d','30d','45d','60d',] # names of the durations in the NOAA tool
-DURATIONS_PANDAS = ['2H','3H','6H','12H','1D','2D','3D','4D','7D','10D','20D','30D','45D','60D',] # these are PANDAS date strings
+DURATIONS_NOAA = ['60m', '2h','3h','6h','12h','24h','2d','3d','4d','7d','10d','20d','30d','45d','60d',] # names of the durations in the NOAA tool
+DURATIONS_PANDAS = ['1H', '2H','3H','6H','12H','1D','2D','3D','4D','7D','10D','20D','30D','45D','60D',] # these are PANDAS date strings
 OUT_NAMING_LU = dict(zip(DURATIONS_PANDAS, DURATIONS_NOAA))
 # '60m','1H', <- removed from durations since they are handled differently
 
 # Mapping of durations to highest duration that they are an even multiple of.
 MULTIPLES = {
-    '2H':None,  '3H':None,  '6H':'3H',  '12H':'6H',  '1D':'12H',  '2D':'1D',
-    '3D':'1D',  '4D':'2D',  '7D':'1D',  '10D':'2D',  '20D':'10D', '30D':'10D',
-    '45D':'1D', '60D':'30D'
+    '1H': None, '2H':'1H',  '3H':None,  '6H':'3H',  '12H':'6H',  '1D':'12H', 
+    '2D':'1D',   '3D':'1D',  '4D':'2D',  '7D':'1D',  '10D':'2D',  '20D':'10D',
+    '30D':'10D', '45D':'1D', '60D':'30D'
 }
 out_files = {}
 
@@ -123,7 +123,16 @@ if __name__ == '__main__':
         else:
             files = wrf_files.copy()
 
-        if (duration in ['2H','3H','6H']):
+        if (duration == '1H'):
+            # The hourly sums are naturally identical to hourly data, so we
+            # just copy the files to the output directory
+            print(' Copying hourly durations...', flush=True)
+            for fn in files:
+                year = fn.split('.nc')[0].split('_')[-1] # from standard naming convention
+                out_fn = os.path.join(out_path, '{0}_{1}_sum_wrf_{2}_{3}.nc'.format(variable, OUT_NAMING_LU[duration], data_group, year))
+                shutil.copy( fn, out_fn )
+                out_files[duration] = out_files[duration] + [out_fn]
+        elif (duration in ['2H','3H','6H']):
             # Calculate short durations one file at a time
             for fn in files:
                 year = fn.split('.nc')[0].split('_')[-1] # from standard naming convention
@@ -134,9 +143,3 @@ if __name__ == '__main__':
             out_fn = os.path.join(out_path, '{0}_{1}_sum_wrf_{2}.nc'.format(variable,OUT_NAMING_LU[duration], data_group))
             _ = run_duration( files, duration, out_fn, variable='pcpt' )
             out_files[duration] = out_files[duration] + [out_fn]
-
-    # move hourly data to the output location -- it is the starting 'duration'
-    print(' moving the base hourlies, renamed to final naming convention, to the output_path', flush=True)
-    years = [ os.path.basename(fn).split('.')[0].split('_')[-1] for fn in wrf_files ]
-    out_filenames = [os.path.join(out_path, 'pcpt_{0}_sum_wrf_{1}_{2}.nc'.format('60m', data_group, year)) for year in years]
-    _ = [ shutil.copy( fn, out_fn ) for fn,out_fn in zip(files, out_filenames) if not os.path.exists(out_fn) ]

@@ -43,6 +43,11 @@ if use_return_intervals:
         'GFDL-CM3_rcp85', 'NCAR-CCSM4_rcp85'
     ]
 
+# Undiff renames the variables too
+use_undiff = step.startswith('undiff')
+if use_undiff:
+    VARIABLES = [ 'pf_upper', 'pf', 'pf_lower']
+
 FILE_SUFFIX = step.replace('/','').split('-')[0]
 
 
@@ -71,7 +76,7 @@ for dataset in DATASETS:
             )
 
             for var in VARIABLES:
-                arr = ds[var].values[...,x,y]
+                arr = ds[var].values[...,y,x]
                 print(
                     ts_str +
                     f" ({var})".ljust(15) +

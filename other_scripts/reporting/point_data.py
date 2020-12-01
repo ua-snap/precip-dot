@@ -1,11 +1,12 @@
 ##############################################
-# For a given pair of xc and yc coordinates,
+# For a given pair of lon and lat coordinates,
 # print a table summarizing the final data
 # at that point.
 ##############################################
 
 import sys, os
 import xarray as xr
+from pyproj import Transformer
 
 DATADIR     = "/workspace/Shared/Tech_Projects/DOT/project_data/wrf_pcpt/undiff/"
 
@@ -16,11 +17,13 @@ VARIABLES   = [ 'pf_upper', 'pf', 'pf_lower']
 INTERVALS   = [2.0, 5.0, 10.0, 25.0, 50.0, 100.0, 200.0, 500.0, 1000.0]
 
 if len(sys.argv) != 3:
-    print("usage: point_data.py XCOORD YCOORD", file=sys.stderr)
+    print("usage: point_data.py LONGITUDE LATITUDE", file=sys.stderr)
     exit(1)
 
-x = int(sys.argv[1])
-y = int(sys.argv[2])
+lon = float(sys.argv[1])
+lat = float(sys.argv[2])
+transformer = Transformer.from_crs(4326, 3338, always_xy=True)
+x, y = transformer.transform(lon, lat)
 
 for dataset in DATASETS:
     for duration in DURATIONS:
@@ -40,7 +43,7 @@ for dataset in DATASETS:
             )
 
             for var in VARIABLES:
-                arr = ds[var][...,y,x].values
+                arr = ds[var].sel(xc=x, yc=y, method="nearest").values
                 print(
                     ts_str +
                     f" ({var})".ljust(15) +

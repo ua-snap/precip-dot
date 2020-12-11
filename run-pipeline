@@ -91,7 +91,7 @@ use File::Basename;
 use File::Spec qw(rel2abs);
 
 # Ordering of steps
-my @order = qw(durations ams intervals diff deltas warp multiply fudge undiff);
+my @order = qw(durations ams intervals diff deltas warp multiply fudge undiff fudge_ci);
 
 # Mapping of steps to descriptions
 my %descriptions = (
@@ -104,6 +104,7 @@ my %descriptions = (
     'multiply'  => "Multiply by NOAA Atlas 14 data by deltas for final product.",
     'fudge'     => "Fudge values for consistency",
     'undiff'    => "Re-apply the diffs created in the diff step and add header information to data"
+    'fudge_ci'  => "Fudge confidence intervals values for consistency"
 );
 
 # Mapping indicating whether each step should be performed.
@@ -330,6 +331,17 @@ for my $group (@valid_pairs) {
         script  => 'undiff.py',
         group   => $group
     ) if $do_steps{undiff};
+    
+    #
+    # Fudge CI
+    #
+    exec_script(
+        name    => 'Fudging CI',
+        indir   => 'undiff',
+        outdir  => 'fudgeci',
+        script  => 'fudge_ci.py',
+        group   => $group
+    ) if $do_steps{fudge_ci};
 }
 
 #######################

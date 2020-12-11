@@ -16,6 +16,7 @@ The data transformation in this project follows a pipeline with the following st
 8. **Multiply:** Multiply the NOAA Atlas 14 data by the deltas to get the final precipitation estimates.
 9. **Fudge:** Fudge values for consistency
 10. **Undiff:** Re-apply the diffs created in the Diff step and add header information to data
+11. **Fudge CI** Fudge confidence interval values for consistency
 
 The WRF data includes 5 different models/data groups (listed below). The pipeline is repeated for every group:
 

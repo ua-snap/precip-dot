@@ -13,6 +13,7 @@ import xarray as xr
 import argparse
 import re
 from datetime import datetime
+from pyproj import CRS 
 
 timerange_regex = re.compile(r'^.*?(20\d\d\-20\d\d)_\w+\.nc$')
 def get_timerange(fn):
@@ -85,9 +86,8 @@ def run(fn):
 
     # CRS
     ds_out['crs'] = int()
-    ds_out['crs'].attrs['grid_mapping_name'] = "albers_conical_equal_area"
-                                                # LONG STRING WARNING!!
-    ds_out['crs'].attrs['crs_wkt']           = 'PROJCS["NAD83 / Alaska Albers",GEOGCS["NAD83",DATUM["North_American_Datum_1983",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6269"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4269"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["standard_parallel_1",55],PARAMETER["standard_parallel_2",65],PARAMETER["latitude_of_center",50],PARAMETER["longitude_of_center",-154],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","3338"]]'
+    # use pyproj to derive correct CF-compliant CRS attrs
+    ds_out["crs"].attrs = CRS.from_epsg(3338).to_cf()
     ds_out['pf']      .attrs['grid_mapping'] = 'crs'
     ds_out['pf_upper'].attrs['grid_mapping'] = 'crs'
     ds_out['pf_lower'].attrs['grid_mapping'] = 'crs'

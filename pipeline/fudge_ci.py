@@ -49,26 +49,28 @@ visited_durations = [False for _ in DURATIONS]
 # Iterate over all of the durations and fudge values to ensure they consistently
 # increase as duration increases. Returns the number of values that had to be
 # changed
+
+def fudge_durations_cbound(higher_ds, lower_ds, cbound, values_changed):
+    """make data consistent across durations for a given bound"""
+    higher_arr = higher_ds[cbound].values
+    lower_arr = lower_ds[cbound].values
+
+    # mask represents the indices where the higher duration is less
+    # than the lower duration
+    diff = higher_arr - lower_arr
+    mask = diff <= 0
+    num = np.count_nonzero(mask)
+
+    # Adjust values
+    if num > 0:
+        print(f"    {num} value(s) changed", flush=True)
+        values_changed += num
+        higher_arr[mask] = lower_arr[mask] * 1.001
+
+    return higher_arr, values_changed
+    
+    
 def iterate_durations():
-    def fudge_cbound(higher_ds, lower_ds, cbound, values_changed):
-        """make data consistent for a given bound"""
-        higher_arr = higher_ds[cbound].values
-        lower_arr = lower_ds[cbound].values
-
-        # mask represents the indices where the higher duration is less
-        # than the lower duration
-        diff = higher_arr - lower_arr
-        mask = diff <= 0
-        num = np.count_nonzero(mask)
-
-        # Adjust values
-        if num > 0:
-            print(f"    {num} value(s) changed", flush=True)
-            values_changed += num
-            higher_arr[mask] = lower_arr[mask] * 1.001
-        
-        return higher_arr, values_changed
-
     print(" Iterating over durations...", flush=True)
 
     values_changed = 0
@@ -104,26 +106,10 @@ def iterate_durations():
             # Load data
             higher_ds = xr.load_dataset(higher_file)
             lower_ds = xr.load_dataset(lower_file)
-            #             higher_arr = higher_ds['pf'].values
-            #             lower_arr  = lower_ds['pf'].values
-
-            #             # mask represents the indices where the higher duration is less
-            #             # than the lower duration
-            #             diff = higher_arr - lower_arr
-            #             mask = diff <= 0
-            #             num = np.count_nonzero(mask)
-
-            #             # Adjust values
-            #             if num > 0:
-            #                 print(f"    {num} value(s) changed", flush=True)
-            #                 values_changed += num
-            #                 higher_arr[mask] = lower_arr[mask] * 1.01
-            #                 higher_ds['pf'][...,...,...] = higher_arr
-
-            higher_ds["pf_lower"][...,...,...], values_changed = fudge_cbound(
+            higher_ds["pf_lower"][...,...,...], values_changed = fudge_durations_cbound(
                 higher_ds, lower_ds, "pf_lower", values_changed
             )
-            higher_ds["pf_upper"][...,...,...], values_changed = fudge_cbound(
+            higher_ds["pf_upper"][...,...,...], values_changed = fudge_durations_cbound(
                 higher_ds, lower_ds, "pf_upper", values_changed
             )
             # Save results
@@ -153,7 +139,7 @@ def iterate_durations():
 # increase as interval increases. Returns the number of values that had to be
 # changed
 
-def fudge_cbound(file):
+def fudge_intervals_cbound(file):
     """make data consistent for given bound"""
     values_changed = 0
     ds = xr.load_dataset(file)
@@ -177,12 +163,9 @@ def fudge_cbound(file):
     return values_changed
 
     
-    
 def iterate_intervals(ncpus):
     print(" Iterating over intervals...", flush=True)
     
-#     values_changed = 0
-
     # Since intervals are stored within each file, this process is
     # more straightforward than iterating over durations since all the info
     # we need to compare interval values are contained within a single file.
@@ -194,35 +177,10 @@ def iterate_intervals(ncpus):
     files = glob(os.path.join(out_path, f"*_{data_group}_*.nc"))
     
     pool = Pool(ncpus)
-    out = pool.map(fudge_cbound, files)
+    out = pool.map(fudge_intervals_cbound, files)
     pool.close()
     pool.join()
 
-#     for file in files:
-#         # print(f" {os.path.basename(file)}", flush=True)
-
-#         ds = xr.load_dataset(file)
-
-#         for i in range(1, len(ds.interval)):
-#             ds, values_changed = fudge_cbound(ds, "pf_lower", i, values_changed)
-#             ds, values_changed = fudge_cbound(ds, "pf_upper", i, values_changed)
-#         #             higher_arr = ds['pf'][i  ,...,...].values
-#         #             lower_arr  = ds['pf'][i-1,...,...].values
-
-#         #             diff = higher_arr - lower_arr
-#         #             mask = diff <= 0
-#         #             num = np.count_nonzero(mask)
-
-#         #             if num > 0:
-#         #                 print(f"    {num} value(s) changed", flush=True)
-#         #                 values_changed += num
-#         #                 higher_arr[mask] = lower_arr[mask] * 1.01
-#         #                 ds['pf'][i,...,...] = higher_arr
-
-#         ds.close()
-#         ds.to_netcdf(file)
-
-#     return values_changed
     return np.array(out).sum()
 
 
